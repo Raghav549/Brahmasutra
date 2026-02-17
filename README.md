@@ -1,53 +1,34 @@
-<<<<<<< HEAD
-# 🕉️ BRAHMA — Sanskrit Universal Creator Engine
+# BRAHMA — Sanskrit Programming Language & AI Engine
 
-BRAHMA is the world's first Sanskrit-native AI powered Universal Software Creation Engine.
+BRAHMA is the world's first fully Sanskrit-native programming language and autonomous AI creation engine.
 
-It understands human prompts and generates complete applications including:
-
-• Frontend  
-• Backend  
-• Database  
-• Deployment  
-• Architecture  
-• Full Stack Systems  
-
-All generated using Sanskrit-native architecture.
+It enables developers to create software, AI systems, and full-stack applications using pure Sanskrit syntax and logic.
 
 ---
 
-## 🚀 Features
+## Core Features
 
-• Sanskrit-native system architecture  
-• Prompt → Full App generation  
-• Automatic backend generator  
-• Automatic frontend generator  
-• Automatic deployment engine  
-• Autonomous architecture generator  
-• Full Stack generation engine  
-• AI-based system expansion  
+• Fully Sanskrit-native syntax  
+• AI-powered code generation engine  
+• Autonomous application generator  
+• Full-stack creation capability  
+• Modular architecture  
+• Extensible compiler and execution engine  
 
 ---
 
-## 🧠 Vision
+## Architecture
 
-BRAHMA aims to become a Universal Creation Engine capable of generating:
+BRAHMA consists of multiple core layers:
 
-• Apps  
-• Websites  
-• AI systems  
-• Operating Systems  
-• SaaS platforms  
-• Autonomous software  
-
-Using pure Sanskrit logic and architecture.
+• Sanskrit Language Core  
+• Compiler Engine  
+• Execution Engine  
+• AI Generation Engine  
+• Deployment Engine  
 
 ---
 
-## ⚙️ Installation
+## Installation
 
-Clone repository:
-=======
-# -
-World First Sanskrit Programming Language and AI Engine
->>>>>>> c29558a69d68274d2c084096823d59eca69a0185
+Clone the repository:
