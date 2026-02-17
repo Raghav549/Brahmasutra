@@ -1,0 +1,11 @@
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+package="com.sutra.मेरा_app">
+
+<application
+android:label="मेरा_app"
+android:allowBackup="true">
+
+</application>
+
+</manifest>

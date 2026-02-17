@@ -1,0 +1,26 @@
+{
+    "prompt": "Create a SaaS chat app with login and dashboard",
+    "analysis": {
+        "app": true,
+        "website": false,
+        "mobile": false,
+        "backend": true,
+        "frontend": true,
+        "database": true,
+        "login": true,
+        "dashboard": true,
+        "api": true,
+        "deployment": true,
+        "ai": false,
+        "saas": true,
+        "cloud": false
+    },
+    "structure": {
+        "backend": "python_server",
+        "frontend": "html_ui",
+        "database": "sqlite",
+        "deployment": "local_server",
+        "api": true
+    },
+    "timestamp": 1771338957.64565
+}

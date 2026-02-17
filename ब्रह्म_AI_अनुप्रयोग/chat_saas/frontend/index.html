@@ -1,0 +1,99 @@
+
+<html>
+
+<body style="background:black;color:lime;text-align:center">
+
+<h1>chat_saas</h1>
+
+<input id="u" placeholder="username"><br>
+<input id="p" placeholder="password" type="password"><br>
+
+<button onclick="register()">REGISTER</button>
+<button onclick="login()">LOGIN</button>
+<button onclick="dashboard()">DASHBOARD</button>
+
+<hr>
+
+<input id="msg" placeholder="message">
+
+<button onclick="send()">SEND</button>
+<button onclick="load()">LOAD CHAT</button>
+
+<pre id="result"></pre>
+
+<script>
+
+token=""
+
+function register()
+{
+fetch("http://127.0.0.1:9100/register",
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:u.value,
+password:p.value
+})
+})
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+function login()
+{
+fetch("http://127.0.0.1:9100/login",
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:u.value,
+password:p.value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+token=d.token
+result.innerText=JSON.stringify(d,null,2)
+})
+}
+
+function dashboard()
+{
+fetch("http://127.0.0.1:9100/dashboard",
+{
+headers:{token:token}
+})
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+function send()
+{
+fetch("http://127.0.0.1:9100/send",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+token:token
+},
+body:JSON.stringify({
+msg:msg.value
+})
+})
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+function load()
+{
+fetch("http://127.0.0.1:9100/chat")
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+</script>
+
+</body>
+
+</html>

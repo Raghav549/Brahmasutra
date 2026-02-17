@@ -1,0 +1,10 @@
+
+print("🕉️ पूर्ण अनुप्रयोग प्रारंभ")
+
+def प्रारंभ():
+    print("backend सक्रिय")
+    print("frontend सक्रिय")
+    print("database सक्रिय")
+    print("api सक्रिय")
+
+प्रारंभ()

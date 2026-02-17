@@ -1,0 +1,33 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>chat app with login database api dashboard</title>
+</head>
+
+<body>
+
+<h1>BRAHMA AI GENERATED APP</h1>
+
+<p>Prompt: chat app with login database api dashboard</p>
+
+<button onclick="test()">Test Backend</button>
+
+<p id="output"></p>
+
+<script>
+
+function test()
+{
+fetch("http://127.0.0.1:5000/api")
+.then(r=>r.json())
+.then(d=>{
+document.getElementById("output").innerText =
+JSON.stringify(d)
+})
+}
+
+</script>
+
+</body>
+</html>

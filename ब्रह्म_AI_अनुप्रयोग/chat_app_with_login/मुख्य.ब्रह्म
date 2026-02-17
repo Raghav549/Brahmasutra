@@ -1,0 +1,8 @@
+
+print("🕉️ अनुप्रयोग प्रारंभ: chat app with login")
+
+def मुख्य():
+    print("🕉️ प्रॉम्प्ट आधारित अनुप्रयोग चल रहा है")
+    print("🕉️ विवरण:", "chat app with login")
+
+मुख्य()

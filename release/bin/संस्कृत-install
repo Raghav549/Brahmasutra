@@ -1,0 +1,10 @@
+#!/data/data/com.termux/files/usr/bin/python3
+
+import sys
+import os
+
+sys.path.append(os.path.expanduser("~/सूत्र-तंत्र/installer"))
+
+from installer_engine import install
+
+install()

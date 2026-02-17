@@ -1,0 +1,38 @@
+
+body {
+
+background: #0b132b;
+color: white;
+font-family: Arial;
+text-align: center;
+
+}
+
+.container {
+
+margin-top: 100px;
+
+}
+
+input {
+
+display: block;
+margin: 10px auto;
+padding: 10px;
+
+}
+
+button {
+
+padding: 10px 20px;
+background: green;
+color: white;
+border: none;
+
+}
+
+.dashboard {
+
+display: none;
+
+}

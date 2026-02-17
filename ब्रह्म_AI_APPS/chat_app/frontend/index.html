@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>BRAHMA APP</title>
+</head>
+
+<body>
+
+<h1>BRAHMA CHAT APP</h1>
+
+<h2>Register</h2>
+
+<input id="ruser">
+<input id="rpass">
+<button onclick="register()">Register</button>
+
+<h2>Login</h2>
+
+<input id="luser">
+<input id="lpass">
+<button onclick="login()">Login</button>
+
+<h2>Output</h2>
+
+<div id="out"></div>
+
+
+<script>
+
+function register(){
+
+fetch("http://127.0.0.1:7000/register",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+
+username:document.getElementById("ruser").value,
+
+password:document.getElementById("rpass").value
+
+})
+
+})
+
+.then(r=>r.json())
+
+.then(d=>{
+
+document.getElementById("out").innerText = JSON.stringify(d)
+
+})
+
+}
+
+
+function login(){
+
+fetch("http://127.0.0.1:7000/login",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+
+username:document.getElementById("luser").value,
+
+password:document.getElementById("lpass").value
+
+})
+
+})
+
+.then(r=>r.json())
+
+.then(d=>{
+
+document.getElementById("out").innerText = JSON.stringify(d)
+
+})
+
+}
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,22 @@
+<html>
+<body>
+<h1>BRAHMA GENERATED APP</h1>
+<button onclick="test()">Test API</button>
+<div id="out"></div>
+
+<script>
+
+function test(){
+
+fetch("http://127.0.0.1:7000/test")
+.then(r=>r.text())
+.then(d=>{
+document.getElementById("out").innerText=d
+})
+
+}
+
+</script>
+
+</body>
+</html>

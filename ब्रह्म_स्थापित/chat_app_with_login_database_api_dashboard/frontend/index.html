@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>BRAHMA APP</title>
+
+<style>
+
+body {
+
+background: black;
+color: lime;
+font-family: monospace;
+text-align: center;
+margin-top: 100px;
+
+}
+
+button {
+
+padding: 10px;
+font-size: 20px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🕉️ BRAHMA APP RUNNING</h1>
+
+<button onclick="run()">CHECK BACKEND</button>
+
+<p id="status"></p>
+
+<script>
+
+function run() {
+
+fetch("http://127.0.0.1:7000/")
+
+.then(r => r.json())
+
+.then(d => {
+
+document.getElementById("status").innerHTML =
+"Backend: " + d.status
+
+})
+
+.catch(e => {
+
+document.getElementById("status").innerHTML =
+"Backend not reachable"
+
+})
+
+}
+
+</script>
+
+</body>
+
+</html>

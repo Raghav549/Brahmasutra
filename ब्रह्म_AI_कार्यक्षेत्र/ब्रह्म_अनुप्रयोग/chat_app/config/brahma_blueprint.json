@@ -1,0 +1,25 @@
+{
+    "ऐप_नाम": "chat_app",
+    "ऐप_ID": "248faa6f-9295-4070-a242-ca46e8b7c0ee",
+    "निर्माण_समय": "2026-02-17 19:19:52.063359",
+    "संस्करण": "110",
+    "पथ": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app",
+    "घटक": [
+        "फ्रंटएंड",
+        "डैशबोर्ड",
+        "बैकएंड",
+        "API",
+        "प्रवेश_प्रणाली",
+        "डेटाबेस",
+        "संदेश_प्रणाली"
+    ],
+    "निर्देशिका": {
+        "root": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app",
+        "frontend": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app/frontend",
+        "backend": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app/backend",
+        "database": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app/database",
+        "api": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app/api",
+        "assets": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app/assets",
+        "config": "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_AI_कार्यक्षेत्र/ब्रह्म_अनुप्रयोग/chat_app/config"
+    }
+}

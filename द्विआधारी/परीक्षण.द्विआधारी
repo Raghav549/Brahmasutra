@@ -1,0 +1,1 @@
+[{'opcode': 'LOAD', 'op1': 'अ', 'op2': 10}, {'opcode': 'LOAD', 'op1': 'ब', 'op2': 20}, {'opcode': 'ADD', 'op1': 'अ', 'op2': 'ब'}, {'opcode': 'SHOW', 'op1': 'अ'}, {'opcode': 'EXIT'}]

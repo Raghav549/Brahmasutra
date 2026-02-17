@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>chat_app</title>
+
+<style>
+
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+}
+
+button {
+    padding: 12px;
+    margin: 10px;
+    background: #22c55e;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+input {
+    padding: 10px;
+    margin: 10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🕉️ BRAHMA APP: chat_app</h1>
+
+<h2>Login</h2>
+
+<input id="user" placeholder="Username">
+<br>
+
+<input id="pass" placeholder="Password" type="password">
+<br>
+
+<button onclick="login()">Login</button>
+
+<h2>Dashboard</h2>
+
+<button onclick="test()">Test Backend</button>
+
+<p id="result"></p>
+
+<script>
+
+function login(){
+
+    document.getElementById("result").innerText =
+    "Login Success (Demo)"
+
+}
+
+function test(){
+
+fetch("http://127.0.0.1:8000")
+
+.then(res=>res.json())
+
+.then(data=>{
+document.getElementById("result").innerText =
+JSON.stringify(data)
+})
+
+}
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+ब्रह्मकार्यक्रमV1
+
+FILE_START
+
+SET अ 999
+PRINT अ
+FILE_END
+
+FILE_START
+
+SET स 10
+SET द 20
+ADD स द
+PRINT स
+FILE_END
+
+FILE_START
+
+SET अ 1
+PRINT अ
+FILE_END
+
+FILE_START
+
+SET अ 100
+SET ब 50
+ADD अ ब
+PRINT अ
+FILE_END
+

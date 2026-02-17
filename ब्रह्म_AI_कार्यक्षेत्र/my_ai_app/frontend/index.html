@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Brahma Generated App</title>
+
+<style>
+body{
+background:#0b1a33;
+color:white;
+font-family:Arial;
+text-align:center;
+padding-top:100px;
+}
+
+button{
+background:#2563eb;
+color:white;
+border:none;
+padding:15px 25px;
+font-size:18px;
+border-radius:8px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Brahma Generated App</h1>
+
+<p>my_ai_app ready</p>
+
+<button onclick="testBackend()">Test Backend</button>
+
+<p id="result"></p>
+
+<script>
+
+async function testBackend(){
+
+try{
+
+let res = await fetch("http://127.0.0.1:5000/");
+
+let text = await res.text();
+
+document.getElementById("result").innerHTML = text;
+
+}catch(e){
+
+document.getElementById("result").innerHTML = "Backend error";
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

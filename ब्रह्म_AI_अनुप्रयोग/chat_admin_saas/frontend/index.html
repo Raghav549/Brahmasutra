@@ -1,0 +1,127 @@
+
+<html>
+
+<body style="background:black;color:lime;text-align:center">
+
+<h1>chat_admin_saas ADMIN SaaS</h1>
+
+<input id="u" placeholder="username"><br>
+<input id="p" placeholder="password"><br>
+
+<button onclick="register()">REGISTER</button>
+<button onclick="login()">LOGIN</button>
+
+<hr>
+
+<h3>ADMIN</h3>
+
+<input id="au" placeholder="admin username"><br>
+<input id="ap" placeholder="admin password"><br>
+
+<button onclick="admin_login()">ADMIN LOGIN</button>
+<button onclick="load_users()">LOAD USERS</button>
+
+<hr>
+
+<input id="msg" placeholder="message">
+
+<button onclick="send()">SEND</button>
+<button onclick="load_chat()">LOAD CHAT</button>
+
+<pre id="result"></pre>
+
+<script>
+
+token=""
+admin_token=""
+
+function register()
+{
+fetch("http://127.0.0.1:9200/register",
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:u.value,
+password:p.value
+})
+})
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+function login()
+{
+fetch("http://127.0.0.1:9200/login",
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:u.value,
+password:p.value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+token=d.token
+result.innerText=JSON.stringify(d,null,2)
+})
+}
+
+function admin_login()
+{
+fetch("http://127.0.0.1:9200/admin_login",
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:au.value,
+password:ap.value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+admin_token=d.token
+result.innerText=JSON.stringify(d,null,2)
+})
+}
+
+function load_users()
+{
+fetch("http://127.0.0.1:9200/users",
+{
+headers:{token:admin_token}
+})
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+function send()
+{
+fetch("http://127.0.0.1:9200/send",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+token:token
+},
+body:JSON.stringify({
+msg:msg.value
+})
+})
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+function load_chat()
+{
+fetch("http://127.0.0.1:9200/chat")
+.then(r=>r.json())
+.then(d=>result.innerText=JSON.stringify(d,null,2))
+}
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="सूत्रAPK7100">
+<application label="सूत्रAPK7100">
+<activity name="MainActivity"/>
+</application>
+</manifest>

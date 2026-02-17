@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>BRAHMA AI</title>
+<style>
+body{
+background:black;
+color:#00ff00;
+font-family:monospace;
+text-align:center;
+margin-top:100px;
+}
+button{
+padding:15px;
+font-size:18px;
+}
+</style>
+</head>
+<body>
+
+<h1>BRAHMA AI APP LIVE</h1>
+
+<button onclick="checkBackend()">CHECK BACKEND</button>
+
+<h2 id="result"></h2>
+
+<script>
+function checkBackend(){
+fetch("http://127.0.0.1:9000/status")
+.then(r=>r.json())
+.then(data=>{
+document.getElementById("result").innerHTML =
+"BACKEND STATUS: " + data.status;
+})
+.catch(e=>{
+document.getElementById("result").innerHTML =
+"BACKEND ERROR";
+});
+}
+</script>
+
+</body>
+</html>

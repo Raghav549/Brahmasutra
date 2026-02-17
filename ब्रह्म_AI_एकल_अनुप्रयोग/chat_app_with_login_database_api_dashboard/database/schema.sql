@@ -1,0 +1,8 @@
+
+-- BRAHMA AI DATABASE
+
+CREATE TABLE users(
+id INTEGER PRIMARY KEY,
+username TEXT,
+password TEXT
+);

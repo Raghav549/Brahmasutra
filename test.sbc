@@ -1,0 +1,3 @@
+SET क 5
+ADD क 45
+PRINT क

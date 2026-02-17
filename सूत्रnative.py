@@ -1,0 +1,80 @@
+# सूत्र तंत्र — Native Machine Layer
+
+class सूत्रNative:
+
+    def __init__(self):
+
+        self.स्मृति = [0] * 256
+
+        self.रजिस्टर = {
+            "क": 0,
+            "ख": 0,
+            "ग": 0,
+            "घ": 0
+        }
+
+
+    def load(self, bytecode_file):
+
+        with open(bytecode_file, "r") as f:
+
+            self.instructions = f.readlines()
+
+
+    def execute(self):
+
+        pc = 0
+
+        while pc < len(self.instructions):
+
+            line = self.instructions[pc].strip()
+
+            parts = line.split()
+
+            if not parts:
+                pc += 1
+                continue
+
+
+            आदेश = parts[0]
+
+
+            if आदेश == "SET":
+
+                reg = parts[1]
+
+                value = int(parts[2])
+
+                self.रजिस्टर[reg] = value
+
+                print("रजिस्टर", reg, "=", value)
+
+
+            elif आदेश == "ADD":
+
+                reg = parts[1]
+
+                value = int(parts[2])
+
+                self.रजिस्टर[reg] += value
+
+                print("रजिस्टर", reg, "=", self.रजिस्टर[reg])
+
+
+            elif आदेश == "PRINT":
+
+                reg = parts[1]
+
+                print("फल:", self.रजिस्टर[reg])
+
+
+            pc += 1
+
+
+if __name__ == "__main__":
+
+    native = सूत्रNative()
+
+    native.load("test.sbc")
+
+    native.execute()

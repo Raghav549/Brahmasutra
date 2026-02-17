@@ -1,0 +1,6 @@
+
+<manifest package="brahmaAI">
+<application>
+<activity android:name="MainActivity"/>
+</application>
+</manifest>

@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>chat_app</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body {
+
+background: #0b1220;
+color: white;
+font-family: Arial;
+text-align: center;
+margin-top: 100px;
+
+}
+
+input {
+
+padding: 10px;
+margin: 10px;
+width: 250px;
+
+}
+
+button {
+
+padding: 12px;
+background: #00ff88;
+border: none;
+cursor: pointer;
+
+}
+
+.container {
+
+background: #111a33;
+padding: 30px;
+display: inline-block;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>BRAHMA APP: chat_app</h1>
+
+<h2>Login</h2>
+
+<input placeholder="Username"><br>
+<input placeholder="Password" type="password"><br>
+
+<button onclick="login()">Login</button>
+
+<h2>Dashboard</h2>
+
+<button onclick="testBackend()">Test Backend</button>
+
+</div>
+
+<script>
+
+function login() {
+
+alert("Login system ready");
+
+}
+
+function testBackend() {
+
+fetch("http://127.0.0.1:5000")
+
+.then(res=>res.text())
+
+.then(data=>alert(data))
+
+}
+
+</script>
+
+</body>
+</html>

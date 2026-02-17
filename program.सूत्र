@@ -1,0 +1,6 @@
+सूत्रEXEC
+SET अ 5
+SET ब 7
+ADD अ ब
+MUL अ ब
+PRINT अ

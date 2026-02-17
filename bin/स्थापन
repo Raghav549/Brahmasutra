@@ -1,0 +1,17 @@
+#!/data/data/com.termux/files/usr/bin/python3
+
+import sys
+import os
+
+sys.path.append(os.path.expanduser("~/सूत्र-तंत्र/engine"))
+
+from install_engine import स्थापन
+
+if len(sys.argv) < 2:
+
+    print("उपयोग:")
+    print("स्थापन app.apk")
+
+else:
+
+    स्थापन(sys.argv[1])

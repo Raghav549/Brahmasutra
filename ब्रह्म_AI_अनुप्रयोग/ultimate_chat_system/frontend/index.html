@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>BRAHMA</title>
+
+<style>
+
+body {
+
+background:black;
+color:gold;
+text-align:center;
+margin-top:100px;
+font-family:Arial;
+
+}
+
+button {
+
+background:gold;
+color:black;
+padding:20px;
+font-size:20px;
+border:none;
+cursor:pointer;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🕉️ BRAHMA APPLICATION</h1>
+
+<button onclick="connectBackend()">CHECK BACKEND</button>
+
+<h2 id="result"></h2>
+
+
+<script>
+
+function connectBackend(){
+
+fetch("http://127.0.0.1:8123/")
+
+.then(res => res.json())
+
+.then(data => {
+
+document.getElementById("result").innerHTML =
+"✅ " + data.message
+
+})
+
+.catch(error => {
+
+document.getElementById("result").innerHTML =
+"❌ backend not connected"
+
+})
+
+}
+
+</script>
+
+</body>
+
+</html>

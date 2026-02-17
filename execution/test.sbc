@@ -1,0 +1,7 @@
+PUSH 10
+PUSH 20
+ADD
+PRINT
+
+SET x 50
+GET x

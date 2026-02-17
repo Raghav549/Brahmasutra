@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>सूत्र OS Boot</title>
+
+<style>
+
+body{
+margin:0;
+background:black;
+color:#00ffd5;
+font-family:sans-serif;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+#logo{
+font-size:40px;
+margin-bottom:20px;
+}
+
+#bar{
+width:200px;
+height:10px;
+border:1px solid #00ffd5;
+}
+
+#fill{
+height:100%;
+width:0%;
+background:#00ffd5;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="logo">सूत्र OS</div>
+
+<div id="bar">
+<div id="fill"></div>
+</div>
+
+<script>
+
+let p=0;
+
+let interval=setInterval(()=>{
+
+p+=5;
+
+document.getElementById("fill").style.width=p+"%";
+
+if(p>=100){
+
+clearInterval(interval);
+
+setTimeout(()=>{
+location.href="login.html";
+},500);
+
+}
+
+},100);
+
+</script>
+
+</body>
+</html>

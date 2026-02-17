@@ -1,0 +1,29 @@
+सूत्र Bytecode Specification v1
+
+Opcode Table:
+
+01 → स्थापित
+02 → प्रदर्शित
+03 → वृद्धि
+04 → धकेलो
+05 → जोड़_स्टैक
+06 → आह्वान
+07 → प्रत्यावर्तन
+08 → चिह्न
+09 → यदि_कम
+
+Register format:
+
+R1 → 01
+R2 → 02
+R3 → 03
+R4 → 04
+
+Instruction format:
+
+[OPCODE] [ARG1] [ARG2]
+
+Example:
+
+01 01 10
+02 01
