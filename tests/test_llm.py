@@ -398,3 +398,54 @@ class TestCli:
 
         assert main(["sutra-math"]) == 0
         assert "त्रुटि" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# the one-command mission (target → train → self-edit → OS → app)
+# ---------------------------------------------------------------------------
+class TestMission:
+    def test_mission_runs_the_whole_cycle(self, home, tmp_path):
+        from brahma_llm.mission import run_mission
+
+        report = run_mission("अभाज्य संख्या जाँच", outdir=str(tmp_path / "mission"),
+                             iterations=1, epochs=1, size="tiny", budget=120,
+                             log=lambda message: None)
+        assert report["training"]["rounds"], "प्रशिक्षण चक्र नहीं चला"
+        assert report["training"]["best_perplexity"] is not None
+        assert report["kernel_verified"] is True
+        assert report["os"]["accepted"] is True
+        assert report["os"]["origin"] in ("model", "shipped-kernel")
+        assert report["app"]["built"] is True
+        assert report["app"]["logic_runs"] is True
+        assert report["app"]["smoke_ok"] is True
+        assert os.path.exists(report["report_path"])
+        saved = json.load(open(report["report_path"], encoding="utf-8"))
+        assert saved["target"] == "अभाज्य संख्या जाँच"
+
+    def test_mission_without_os_or_app(self, home, tmp_path):
+        from brahma_llm.mission import run_mission
+
+        report = run_mission("सूची", outdir=str(tmp_path / "mission2"), iterations=1, epochs=1,
+                             size="tiny", budget=120, write_os=False, build_app=False,
+                             log=lambda message: None)
+        assert report["os"]["attempted"] is False
+        assert report["app"]["built"] is False
+        assert report["kernel_verified"] is True
+
+    def test_kernel_harness_boots_with_a_generated_body(self):
+        from brahma_llm.kernel import build_image, verify
+        from brahma_llm.mission import _compose_kernel
+
+        source = _compose_kernel("स्थापय अ = 2 + 3\nदर्शय अ")
+        report = verify(build_image(source))
+        assert report["ok"], report["problems"]
+        assert "5" in report["output"]
+
+    def test_broken_generated_kernel_falls_back_to_the_shipped_one(self, home, tmp_path):
+        from brahma_llm.mission import _compose_kernel
+        from brahma_llm.selfedit import SelfEditor
+
+        editor = SelfEditor(workdir=str(tmp_path / "self"))
+        record = editor.try_os(_compose_kernel("स्थापय अ = "))
+        assert record.accepted is False
+        assert "SyntaxError" in record.detail or "ParseError" in record.detail or "LexError" in record.detail

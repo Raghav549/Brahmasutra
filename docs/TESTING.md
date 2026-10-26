@@ -4,7 +4,7 @@
 
 ```bash
 python -m pip install -e ".[dev]" pytest-cov
-pytest -q                                   # 456 tests, ~15 s
+pytest -q                                   # 460 tests, ~15 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools brahma_llm
 ```

@@ -56,8 +56,8 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI | ✅ **stable**, 456 tests, 93 % coverage |
-| `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, kernel image, app builder | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI | ✅ **stable**, 460 tests, 93 % coverage |
+| `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, kernel image, app builder, `mission` | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
 | `brahma_web` / `brahma_chat` — stdlib HTTP + demo backends | ✅ works (no Flask needed) |
@@ -79,6 +79,7 @@ brahma llm autotrain --target "अभाज्य संख्या जाँ�
 brahma llm evolve --body --os          # grow the model, rebuild + verify the kernel
 brahma llm kernel verify               # boot SUTRAOS: banner → self-test → READY
 brahma llm build-app --target "योग अनुप्रयोग"
+brahma llm mission --target "अभाज्य संख्या जाँच"   # the whole cycle in one command
 brahma llm sutra-math                  # the model's maths, executed by सूत्र itself
 ```
 
@@ -222,7 +223,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 456 passed in ~19 s
+pytest -q                                  # 460 passed in ~20 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered
@@ -241,6 +242,9 @@ check, and an optional build of the C VM.
    then it builds labelled ZIP bundles.
 4. Grow `brahma_ai` beyond n-grams (embedding-based router) behind the same interface.
 5. Add `mypy --strict` and property-based tests to CI.
+6. Scale the LLM beyond pure-Python sizes: today 4.5 k–52 k parameters, because
+   every multiply-add is interpreted Python. Real scale needs a numpy/torch backend,
+   which this project deliberately does not depend on ([docs/LLM.md §3.1](docs/LLM.md)).
 
 Details and effort estimates: [docs/AUDIT.md §8](docs/AUDIT.md#8-आगे-की-योजना-remaining-roadmap).
 

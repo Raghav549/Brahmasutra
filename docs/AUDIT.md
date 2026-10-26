@@ -538,7 +538,7 @@ changed afterwards, and how each claim is verified.
 | Modules importing correctly as packages | 725 / 725 | **748 / 748** | `python -c "import brahma…"` |
 | Legacy demo scripts passing | 40 / 51 | **51 / 51** | `tools/legacy_baseline.py` |
 | Demo scripts crashing with a traceback | 11 | **0** | root sweep, §10.3 |
-| Automated tests | 326 (12 xfail) | **456 (0 xfail)** | `pytest -q` |
+| Automated tests | 326 (12 xfail) | **460 (0 xfail)** | `pytest -q` |
 | flake8 (`brahma tests tools`) | 0 | **0** | CI |
 | Committed binary artefacts | 13 fake/`stale` | **0** (deleted + ignored) | `git ls-files '*.apk' '*.bin'` |
 
