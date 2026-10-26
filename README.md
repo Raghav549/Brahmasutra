@@ -7,7 +7,7 @@ that writes सूत्र and retrains itself.**
 [![CI](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml/badge.svg)](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-556%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-587%20passing-brightgreen)](tests/)
 
 ```brahma
 कार्य फिब(n)
@@ -56,7 +56,7 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, `बाह्य`/`वैश्विक`, interpolation, slice assignment, 40+ builtins) | ✅ **stable**, 556 tests, 93 % coverage |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, `बाह्य`/`वैश्विक`, interpolation, slice assignment, tuples, sets, modules + सूत्र standard library, 43 builtins / 88 names) | ✅ **stable**, 587 tests, 93 % coverage |
 | `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, **सूत्र-OS kernel**, agent (chat·code·run·explain·image) and HTTP server | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
@@ -189,7 +189,19 @@ print(code.instructions)                  # [LOAD_CONST, PRINT, HALT]
 * **Blocks end with `अन्त`** (`end`); indentation is cosmetic.
 * **Real expressions** — 11 precedence levels, `**` (right-associative), short-circuit logic.
 * **Functions and recursion** — parameters, locals, early return, call-depth limit.
-* **Lists and strings** — literals, indexing (including negative), element assignment, concatenation.
+* **Lists, tables, tuples and sets** — literals, indexing (including negative),
+  slicing, element assignment, table keys that are themselves tuples.
+* **Modules and a standard library written in सूत्र** — `आयात "गणित"` (merge
+  names) or `आयात "गणित" जैसे ग` (bind a table); `गणित`, `पाठ` and `सूची` ship
+  inside the engine and are ordinary BRAHMA code.
+
+  ```brahma
+  आयात "गणित"
+  दर्शय क्रमगुणित(5)      # 120
+  दर्शय अभाज्य(97)         # सत्य
+  ```
+* **Closures and error handling** — `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`,
+  `बाह्य`/`वैश्विक`, functions as values (`त["क"](2, 3)`).
 * **Diagnostics with positions** — `file.sutra:4:5: अपरिभाषित नाम 'अ'` plus a call trace.
 * **Two guards against runaway programs** — an instruction budget and a call-depth limit.
 
@@ -227,8 +239,10 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 | Path | What it is |
 |---|---|
 | `brahma/` | **the engine** (this is the product) |
+| `brahma/lib/` | the standard library, written in सूत्र (`गणित`, `पाठ`, `सूची`) |
+| `brahma_llm/` | the model, trainer, self-editor, सूत्र-OS kernel, agent, HTTP server |
 | `examples/` | runnable Sanskrit programs |
-| `tests/` | 326 tests, including the legacy regression matrix |
+| `tests/` | 587 tests, including the legacy regression matrix |
 | `docs/LANGUAGE.md` | language reference + bytecode spec |
 | `docs/TESTING.md` | how to run and extend the test suite |
 | `docs/AUDIT.md` | **full project audit** — findings, evidence, roadmap |
@@ -239,7 +253,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 556 passed in ~28 s
+pytest -q                                  # 587 passed in ~34 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered

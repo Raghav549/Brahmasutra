@@ -1008,3 +1008,159 @@ class TestScopeDeclarations:
         lines = []
         VM(out=lines.append).run(load_bytecode(path))
         assert lines == ["2"]
+
+
+class TestTuples:
+    """``(a, b)`` — immutable, hashable sequences (3.6)."""
+
+    def test_literal_and_indexing(self):
+        assert out("ट = (1, 2, 3)\nदर्शय ट[1]\nदर्शय ट") == ["2", "(1, 2, 3)"]
+
+    def test_single_element_needs_a_trailing_comma(self):
+        assert out("स्थापय एक = (5,)\nदर्शय एक") == ["(5,)"]
+        assert out("स्थापय समूह = (5)\nदर्शय समूह") == ["5"]
+
+    def test_empty_tuple(self):
+        assert out("दर्शय ()") == ["()"]
+
+    def test_length_slicing_and_membership(self):
+        source = "ट = (1, 2, 3)\nदर्शय लम्बाई(ट)\nदर्शय ट[1:]\nदर्शय समाविष्ट(ट, 2)"
+        assert out(source) == ["3", "(2, 3)", "सत्य"]
+
+    def test_tuples_are_hashable_dict_keys(self):
+        assert out('त = {(1, 2): "जोड़ी"}\nदर्शय त[(1, 2)]') == ["जोड़ी"]
+
+    def test_tuple_cannot_be_assigned_into(self):
+        error = error_of("ट = (1, 2)\nट[0] = 9\n")
+        assert error.message
+
+    def test_constructor_and_type(self):
+        assert out('दर्शय टपल(1, 2)\nदर्शय प्रकार((1, 2))') == ["(1, 2)", "टपल"]
+
+    def test_equality_and_nesting(self):
+        assert out("दर्शय (1, 2) == (1, 2)\nदर्शय ((1, 2), 3)") == ["सत्य", "((1, 2), 3)"]
+
+
+class TestSets:
+    """``समुच्चय`` — sets and the operations people actually use (3.6)."""
+
+    def test_construction_deduplicates(self):
+        assert out("स = समुच्चय([3, 1, 2, 1])\nदर्शय स") == ["{1, 2, 3}"]
+
+    def test_empty_set(self):
+        assert out("स = समुच्चय()\nदर्शय लम्बाई(स)\nदर्शय स") == ["0", "समुच्चय()"]
+
+    def test_add_and_discard(self):
+        source = ("स = समुच्चय([1])\nसमुच्चय_जोड़ो(स, 9)\n"
+                  "दर्शय स\nसमुच्चय_हटाओ(स, 1)\nदर्शय स")
+        assert out(source) == ["{1, 9}", "{9}"]
+
+    def test_union_intersection_difference(self):
+        source = (
+            "a = समुच्चय([1, 2, 3])\n"
+            "b = समुच्चय([2, 3, 4])\n"
+            "दर्शय समुच्चय_संघ(a, b)\n"
+            "दर्शय समुच्चय_छेद(a, b)\n"
+            "दर्शय समुच्चय_अंतर(a, b)\n"
+        )
+        assert out(source) == ["{1, 2, 3, 4}", "{2, 3}", "{1}"]
+
+    def test_membership_and_type(self):
+        source = "स = समुच्चय([1, 2])\nदर्शय समाविष्ट(स, 2)\nदर्शय समाविष्ट(स, 5)\nदर्शय प्रकार(स)"
+        assert out(source) == ["सत्य", "असत्य", "समुच्चय"]
+
+    def test_set_from_string_and_tuple(self):
+        assert out('दर्शय समुच्चय("अआइ")\nदर्शय समुच्चय((1, 1, 2))') == ["{अ, आ, इ}", "{1, 2}"]
+
+    def test_unhashable_values_are_rejected(self):
+        error = error_of("स = समुच्चय([1])\nसमुच्चय_जोड़ो(स, [2])\n")
+        assert "अपरिवर्तनीय" in error.message
+
+    def test_sets_require_a_set_argument(self):
+        error = error_of("समुच्चय_संघ([1], समुच्चय([2]))\n")
+        assert "समुच्चय" in error.message
+
+
+class TestCallableExpressions:
+    """``f()()`` and ``त["क"](...)`` — calling a computed value (3.6)."""
+
+    def test_call_on_indexed_value(self):
+        source = ('कार्य जोड़(अ, ब)\n    प्रत्यागमन अ + ब\nअन्त\n'
+                  'त = {"जोड़": जोड़}\nदर्शय त["जोड़"](2, 3)')
+        assert out(source) == ["5"]
+
+    def test_call_on_returned_function(self):
+        source = (
+            "कार्य बनाओ()\n"
+            "    प्रत्यागमन दुगना\n"
+            "अन्त\n"
+            "कार्य दुगना(मान)\n"
+            "    प्रत्यागमन मान * 2\n"
+            "अन्त\n"
+            "स्थापय फ = बनाओ()\n"
+            "दर्शय फ(21)\n"
+        )
+        assert out(source) == ["42"]
+
+    def test_calling_a_non_callable_is_a_runtime_error(self):
+        error = error_of('त = {"क": 5}\nदर्शय त["क"]()\n')
+        assert "आह्वान" in error.message
+
+
+class TestModules:
+    """``आयात`` — imports, aliases and the standard library (3.6)."""
+
+    def test_import_merges_names(self, tmp_path):
+        (tmp_path / "सहायक.सूत्र").write_text(
+            "कार्य तिगुना(मान)\n    प्रत्यागमन मान * 3\nअन्त\n", encoding="utf-8")
+        main = tmp_path / "मुख्य.सूत्र"
+        main.write_text('आयात "सहायक"\nदर्शय तिगुना(7)\n', encoding="utf-8")
+        result = execute(main.read_text(encoding="utf-8"), source_name=str(main))
+        assert result.ok, result.error
+        assert result.output == ["21"]
+
+    def test_import_with_alias_returns_a_table(self, tmp_path):
+        (tmp_path / "सहायक.सूत्र").write_text(
+            "कार्य तिगुना(मान)\n    प्रत्यागमन मान * 3\nअन्त\n", encoding="utf-8")
+        main = tmp_path / "मुख्य.सूत्र"
+        main.write_text('आयात "सहायक" जैसे स\nदर्शय स["तिगुना"](7)\n', encoding="utf-8")
+        result = execute(main.read_text(encoding="utf-8"), source_name=str(main))
+        assert result.ok, result.error
+        assert result.output == ["21"]
+
+    def test_module_body_runs_once(self, tmp_path):
+        (tmp_path / "गिनती.सूत्र").write_text("दर्शय \"लोड\"\n", encoding="utf-8")
+        main = tmp_path / "मुख्य.सूत्र"
+        main.write_text('आयात "गिनती"\nआयात "गिनती"\n', encoding="utf-8")
+        result = execute(main.read_text(encoding="utf-8"), source_name=str(main))
+        assert result.ok, result.error
+        assert result.output == ["लोड"]
+
+    def test_missing_module_names_the_search_path(self, tmp_path):
+        main = tmp_path / "मुख्य.सूत्र"
+        main.write_text('आयात "नहीं_है"\n', encoding="utf-8")
+        result = execute(main.read_text(encoding="utf-8"), source_name=str(main))
+        assert not result.ok
+        assert "मॉड्यूल नहीं मिला" in (result.error.message or "")
+
+    def test_circular_import_is_reported(self, tmp_path):
+        (tmp_path / "क.सूत्र").write_text('आयात "ख"\n', encoding="utf-8")
+        (tmp_path / "ख.सूत्र").write_text('आयात "क"\n', encoding="utf-8")
+        main = tmp_path / "मुख्य.सूत्र"
+        main.write_text('आयात "क"\n', encoding="utf-8")
+        result = execute(main.read_text(encoding="utf-8"), source_name=str(main))
+        assert not result.ok
+        assert "चक्रीय" in (result.error.message or "")
+
+    def test_standard_library_math(self):
+        assert out('आयात "गणित"\nदर्शय क्रमगुणित(5)\nदर्शय अभाज्य(97)\nदर्शय महत्तम(48, 18)') == \
+            ["120", "सत्य", "6"]
+
+    def test_standard_library_text_and_list(self):
+        source = ('आयात "पाठ"\nदर्शय पलटो("राम")\nदर्शय शब्द_संख्या("एक दो तीन")\n'
+                  'आयात "सूची"\nदर्शय अनन्य([1, 1, 2])\nदर्शय खंड([1, 2, 3], 2)')
+        assert out(source) == ["मार", "3", "[1, 2]", "[[1, 2], [3]]"]
+
+    def test_import_outside_a_function_only(self):
+        error = error_of("आयात = 5\n")
+        assert error.message

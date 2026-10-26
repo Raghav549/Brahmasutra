@@ -1,10 +1,12 @@
 # BRAHMA भाषा संदर्भ (Language Reference)
 
-Version 3.5.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
+Version 3.6.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
 Grammar history: 3.0.0 added dicts, slices and multi-line literals; 3.1.0 added
 closures, `प्रयास`/`पकड़` exception handling and `$"…{expr}…"` interpolation;
 3.2.0 added `उठाओ` (raise), `अन्ततः` (finally) and slice assignment; 3.5.0 added
-`बाह्य`/`वैश्विक` scope declarations.
+`बाह्य`/`वैश्विक` scope declarations; 3.6.0 added tuples, sets, callable
+expressions (`त["क"](…)`) and the `आयात` module system with a standard library
+written in सूत्र itself (`brahma/lib/`).
 
 BRAHMA is a small, dynamically typed language whose native vocabulary is
 Sanskrit. Every keyword is available in Devanagari **and** in ASCII, so the
@@ -106,6 +108,8 @@ arguments are therefore ordinary code:
 | `उठाओ` | `raise` | raise a fault with a message |
 | `बाह्य` | `nonlocal` | write through to an enclosing closure variable |
 | `वैश्विक` | `global` | write through to a global |
+| `आयात` | `import` | load another `.सूत्र` module |
+| `जैसे` | — (no ASCII form) | bind a module to a name: `आयात "गणित" जैसे ग` |
 | `प्रत्यागमन` | `return` | return from function |
 | `सत्य` | `true` | boolean true |
 | `असत्य` | `false` | boolean false |
@@ -128,10 +132,17 @@ Blocks are **terminated by `अन्त`**, not indented. Indentation is cosmet
 | boolean | `सत्य`, `असत्य` | as-is |
 | list | `[1, 2, 3]` | false when empty |
 | table (dict) | `{"क": 1}` | false when empty |
+| tuple | `(1, 2)`, `(5,)`, `()` | false when empty |
+| set | `समुच्चय([1, 2])` | false when empty |
 | null | `शून्य` | always false |
 
 Equality is **type-strict** for booleans: `सत्य == 1` is `असत्य`. Integers and
 floats compare numerically: `1 == 1.0` is `सत्य`.
+
+Tuples are immutable and hashable, so they work as table keys
+(`{(1, 2): "जोड़ी"}`); `(5)` is a parenthesised `5`, `(5,)` is a one-element
+tuple. Sets are built with `समुच्चय(...)` — a `{…}` literal is always a table —
+and support the operations listed in §7.
 
 ---
 
@@ -171,7 +182,22 @@ floats compare numerically: `1 == 1.0` is `सत्य`.
   boolean, `शून्य`); a missing key on read is a runtime error naming the key,
   and assigning `त["नयी"] = मान` inserts it.
 
-### 4.3 Assignment
+### 4.3 Calls on expressions
+
+A call target does not have to be a bare name; any expression that evaluates to
+a function can be called:
+
+```brahma
+कार्य दुगना(मान)
+    प्रत्यागमन मान * 2
+अन्त
+
+त = {"कार्य": दुगना}
+दर्शय त["कार्य"](21)      # 42
+दर्शय (दुगना)(21)         # 42
+```
+
+### 4.4 Assignment
 
 ```brahma
 अ = 1                    # simple
@@ -298,7 +324,46 @@ c = काउंटर()
 
 ---
 
-## 6. Builtin functions
+## 6. Modules and the standard library
+
+A program is no longer limited to one file:
+
+```brahma
+आयात "गणित"                 # merge the module's public names
+आयात "गणित" जैसे ग           # ... or bind them under one name (a table)
+
+दर्शय क्रमगुणित(5)           # 120
+दर्शय ग["अभाज्य"](97)        # सत्य
+```
+
+* **Resolution order:** the directory of the importing file, the current
+  directory, the installed standard library (`brahma/lib`), then every
+  directory in `BRAHMA_PATH` (colon separated). A bare name gets the `.सूत्र`
+  suffix, so `आयात गणित` and `आयात "गणित.सूत्र"` are the same request.
+* A module body runs **once** per VM; later imports reuse the cached namespace.
+* A circular import is refused with a `RuntimeFault` that names the module.
+* Every module global is exported, except names that shadow a builtin (those
+  stay reachable through the builtin table).
+* Imports work at module level and inside functions, and can be guarded by
+  `प्रयास`.
+
+The standard library is **written in सूत्र** and ships with the engine in
+`brahma/lib/`. `brahma modules` lists it; `brahma modules गणित` prints one
+module's exports.
+
+| Module | Exports |
+|---|---|
+| `गणित` | `वर्ग` `घन` `घात` `सम` `विषम` `महत्तम` `लघुत्तम` `क्रमगुणित` `फिबोनाची` `अभाज्य` `गुणनखंड` `औसत` `त्रिभुज_क्षेत्रफल` |
+| `पाठ` | `शब्दों_में` `शब्द_संख्या` `पलटो` `बड़ा` `छोटा` `काटो` `शब्द_जोड़ो` `गिनो` |
+| `सूची` | `अनन्य` `खंड` `समतल` `बारंबारता` `उलटी_सूची` |
+
+Every function in those modules is ordinary BRAHMA code: it obeys the same
+scoping rules, raises the same faults and can be stepped through by the same
+VM. Nothing is a native escape hatch.
+
+---
+
+## 7. Builtin functions
 
 | Sanskrit | ASCII | Arity | Behaviour |
 |---|---|---|---|
@@ -338,13 +403,20 @@ c = काउंटर()
 | `प्रकार` | `type` | 1 | type name in Sanskrit |
 | `गोल` | `round` | 1 | nearest integer |
 | `मिलाओ` | `fuse` | 1 | concatenate rendered list items |
+| `टपल` | `tuple` | 0+ | build a tuple from the arguments |
+| `समुच्चय` | `set` | 0-1 | empty set, or a set from a list/tuple/string/set |
+| `समुच्चय_संघ` | `union` | 2 | union of two sets |
+| `समुच्चय_छेद` | `intersection` | 2 | intersection of two sets |
+| `समुच्चय_अंतर` | `difference` | 2 | elements of the first set, minus the second |
+| `समुच्चय_जोड़ो` | `add` | 2 | add a hashable value to a set |
+| `समुच्चय_हटाओ` | `discard` | 2 | remove a value if present |
 
 Builtins check their argument count and raise a BRAHMA error (not a Python
 `TypeError`) on misuse.
 
 ---
 
-## 7. Errors and diagnostics
+## 8. Errors and diagnostics
 
 Three phases, each with its own error type and source position:
 
@@ -366,12 +438,15 @@ Runtime guards:
 * index/type/arity checks on every operation.
 
 The step budget makes accidental hangs impossible, but it is **not** a security
-sandbox: BRAHMA programs cannot touch the filesystem or network at all, because
-no such builtins exist in 3.5.0.
+sandbox. BRAHMA programs cannot touch the filesystem or the network directly —
+no such builtins exist in 3.6.0 — but `आयात` **does** read and execute `.सूत्र`
+files that are reachable through the search path, so run untrusted programs the
+way you would run untrusted shell scripts. `brahma llm run` and the HTTP server
+apply the same step budget and call-depth limit to every program they execute.
 
 ---
 
-## 8. Bytecode and the `.sbc` container
+## 9. Bytecode and the `.sbc` container
 
 Compilation produces a `CodeObject` tree. Serialised form:
 
@@ -398,7 +473,7 @@ inspectable with `brahma disasm`. Loading validates the format name, the
 version, every opcode, every jump target and function object; malformed images
 raise `BytecodeError` and never execute partially.
 
-### 8.1 Opcodes
+### 9.1 Opcodes
 
 | Opcode | Argument | Effect |
 |---|---|---|
@@ -409,6 +484,8 @@ raise `BytecodeError` and never execute partially.
 | `POP` | — | drop top of stack |
 | `DUP` | — | duplicate top |
 | `BUILD_LIST` | n | pop *n* values into a list |
+| `BUILD_TUPLE` | n | pop *n* values into a tuple |
+| `IMPORT` | `[path, alias]` | run a module once, bind its exports (or a table) |
 | `LOAD_INDEX` | — | `target idx` → element |
 | `STORE_INDEX` | — | `target idx value` → store |
 | `BINARY` | `+ - * / % **` | pop 2, push result |
@@ -432,7 +509,7 @@ raise `BytecodeError` and never execute partially.
 
 ---
 
-## 9. CLI
+## 10. CLI
 
 ```bash
 python -m brahma run      prog.sutra          # execute
@@ -441,6 +518,8 @@ python -m brahma compile  prog.sutra -o p.sbc # to bytecode
 python -m brahma disasm   prog.sutra|p.sbc    # bytecode listing
 python -m brahma run-bytecode p.sbc           # execute bytecode
 python -m brahma repl                         # interactive (multi-line blocks)
+python -m brahma modules                      # list the सूत्र standard library
+python -m brahma modules गणित                 # show one module's exports
 python -m brahma version
 ```
 
@@ -450,16 +529,21 @@ After `pip install brahma-lang`, the same commands are available as `brahma`.
 
 ---
 
-## 10. Known limitations (3.5.0)
+## 11. Known limitations (3.6.0)
 
 Honest list — these are not implemented:
 
-* no user-defined classes/objects, no tuples or sets
-* no `import` / module system: a program is a single file
+* no user-defined classes/objects (tables + functions cover most of the same
+  ground, but there is no `self`, no inheritance and no operator overloading)
+* no `for` loop — `यावत्` with an index is the only looping construct
 * no exception *types*: every fault is a message string, so `पकड़` cannot
   discriminate between, say, arithmetic and lookup errors
+* no keyword arguments, default parameter values or `*args`
 * a `बाह्य` declaration is not validated against the enclosing scopes, so a
   misspelled name silently becomes a global instead of being a compile error
+* modules export every global; there is no `private` marker and no packaging
+  beyond "a file on the search path"
+* the module cache is per-VM, so two VMs in one process load a module twice
 * no tail-call optimisation, no JIT; the VM is a straightforward interpreter
 * the C VM in `native_vm/` is a **separate**, much smaller prototype and does
   not implement this specification (it has no `TRY`/`MAKE_FUNCTION` closure

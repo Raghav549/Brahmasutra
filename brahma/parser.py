@@ -35,7 +35,7 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from . import ast_nodes as ast
 from .errors import LexError, ParseError
@@ -152,6 +152,9 @@ class Parser:
         if self.match_keyword("TRY"):
             return self.try_statement(token)
 
+        if self.match_keyword("IMPORT"):
+            return self.import_statement(token)
+
         if self.check_keyword("NONLOCAL", "GLOBAL"):
             token = self.advance()
             if self.func_depth == 0:
@@ -253,6 +256,21 @@ class Parser:
 
         expr = self.expression()
         return ast.ExprStmt(line=token.line, value=expr)
+
+    def import_statement(self, token: Any) -> ast.Node:
+        """``आयात <path> [जैसे <name>]`` — the path is a string or a bare name."""
+        if self.check(TokenKind.STRING):
+            path = self.advance().value
+            if not isinstance(path, str) or not path:
+                raise self.error("आयात का पथ खाली नहीं हो सकता", token)
+        else:
+            path = self.expect_name("मॉड्यूल का नाम").value
+        alias = None
+        if self.match_keyword("AS"):
+            alias = self.expect_name("उपनाम").value
+        if self.check_op("=") or self.check_op("("):
+            raise self.error("आयात केवल कथन है, अभिव्यक्ति नहीं", self.current)
+        return ast.ImportStmt(line=token.line, path=path, alias=alias)
 
     def if_statement(self) -> ast.IfStmt:
         token = self.advance()  # IF
@@ -402,6 +420,14 @@ class Parser:
 
     def postfix(self) -> ast.Node:
         node = self.primary()
+        while self.check_op("("):
+            token = self.advance()
+            args = self._arguments()
+            self.expect_op(")")
+            if isinstance(node, ast.Name):
+                node = ast.Call(line=token.line, callee=node.name, args=args)
+            else:
+                node = ast.Call(line=token.line, args=args, target=node)
         while self.check_op("["):
             token = self.advance()
             start = None
@@ -420,7 +446,22 @@ class Parser:
                 if start is None:
                     raise self.error("खाली सूचकांक '[]' मान्य नहीं")
                 node = ast.Index(line=token.line, target=node, index=start)
+            while self.check_op("("):
+                call_token = self.advance()
+                args = self._arguments()
+                self.expect_op(")")
+                node = ast.Call(line=call_token.line, args=args, target=node)
         return node
+
+    def _arguments(self) -> List[ast.Node]:
+        """Parse a comma separated argument list (the closing ``)`` excluded)."""
+        args: List[ast.Node] = []
+        if not self.check_op(")"):
+            while True:
+                args.append(self.expression())
+                if not self.match_op(","):
+                    break
+        return args
 
     def _interpolation(self, token: Token) -> ast.Node:
         """Lower ``$"...{expr}..."`` into a ``+`` chain of strings.
@@ -533,9 +574,20 @@ class Parser:
             return ast.Name(line=token.line, name=token.value)
 
         if self.match_op("("):
-            node = self.expression()
+            if self.check_op(")"):          # the empty tuple
+                self.advance()
+                return ast.TupleExpr(line=token.line, items=[])
+            first = self.expression()
+            if not self.match_op(","):
+                self.expect_op(")")
+                return first
+            items = [first]
+            while not self.check_op(")"):
+                items.append(self.expression())
+                if not self.match_op(","):
+                    break
             self.expect_op(")")
-            return node
+            return ast.TupleExpr(line=token.line, items=items)
 
         if self.match_op("{"):
             keys: List[ast.Node] = []

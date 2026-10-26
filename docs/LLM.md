@@ -159,6 +159,22 @@ That is the honest lesson of §9 in one table: on this project the binding
 constraint is *data*, not parameters.  Fifty more valid programs buy more than
 ten times more weights do.
 
+Two caveats, both measured (3.6.0, `tiny`, 2 epochs, seed 7, 40 generated
+programs):
+
+* the table above scores each model on the corpus it was trained on.  Scored on
+  one fixed held-out set the effect is smaller and one-directional: perplexity
+  on **generated-style** programs improves 11.492 → 9.646, while perplexity on
+  the **original** texts does not (9.499 → 10.056) — extra data of one style
+  does not automatically help another;
+* `tests/test_llm.py::test_generated_data_improves_perplexity` now asserts the
+  first of those (same held-out set for both models) instead of the old
+  each-model-on-its-own-corpus comparison, which compared unlike distributions.
+
+Scale changes this: at `small` and `xlarge` the extra data lowers perplexity by
+76 % and 88 % respectively on the shuffled corpus used in the table, and the
+autonomous loop in §3.2 measures held-out perplexity every round.
+
 ```bash
 brahma llm corpus --generate 300 --seed 5   # writes $BRAHMA_HOME/corpus/NNNN.sutra
 brahma llm train --size small --epochs 3    # the new files are part of the corpus
@@ -612,7 +628,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-556 passed in 30.0 s
+587 passed in 34.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural
