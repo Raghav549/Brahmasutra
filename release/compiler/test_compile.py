@@ -1,1 +1,2 @@
-for i in range(३:):
+for i in range(3):
+    print(i)

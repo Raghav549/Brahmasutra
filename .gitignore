@@ -1,0 +1,31 @@
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Packaging
+# NOTE: build/ itself is tracked (it holds legacy Android project stubs),
+# so only the Python build products are ignored.
+build/lib/
+build/bdist.*/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
