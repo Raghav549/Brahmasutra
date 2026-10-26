@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import os
 
 
@@ -23,7 +24,7 @@ class ब्रह्मअनुप्रयोगप्रक्षेपक:
 
         try:
 
-            subprocess.run(["python", path])
+            subprocess.run([sys.executable, path])
 
             print("अनुप्रयोग सफलतापूर्वक प्रारंभ")
 

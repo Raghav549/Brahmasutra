@@ -4,8 +4,6 @@ import os
 import http.server
 import socketserver
 
-print("🕉️ सूत्र Universal Creator AI v7 सक्रिय")
-
 
 class सूत्रUniversalCreatorAIv7:
 
@@ -121,15 +119,35 @@ print("🕉️ {नाम} App सक्रिय")
             print("अज्ञात आदेश")
 
 
-# AI start
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, आदेश
 
-ai = सूत्रUniversalCreatorAIv7()
+    print("🕉️ सूत्र Universal Creator AI v7 सक्रिय")
 
-while True:
 
-    आदेश = input("CreatorAIv7 >>> ")
+    # AI start
 
-    if आदेश == "निर्गम":
-        break
+    ai = सूत्रUniversalCreatorAIv7()
 
-    ai.निर्माण(आदेश)
+    while True:
+
+        आदेश = input("CreatorAIv7 >>> ")
+
+        if आदेश == "निर्गम":
+            break
+
+        ai.निर्माण(आदेश)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

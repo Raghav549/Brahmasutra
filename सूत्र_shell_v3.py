@@ -53,13 +53,45 @@ class Shell:
 
 
 
-def प्रारम्भ():
+def प्रारम्भ(interactive=None, ऐप=None):
+    """Start the shell.
+
+    With ``interactive=False`` (or when stdin is not a terminal) the shell only
+    reports that it is ready instead of blocking on ``input()`` — that is what
+    the boot sequence needs.
+    """
+    import sys
 
     shell = Shell()
 
+    if interactive is None:
+        interactive = bool(sys.stdin and sys.stdin.isatty())
+
+    if not interactive:
+        print("🕉️ Shell तैयार (इंटरैक्टिव नहीं — input उपलब्ध नहीं)")
+        return shell
+
     shell.चलाओ()
+    return shell
+
+
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
 
 
 
-# auto start
-प्रारम्भ()
+    # auto start (interactive only when a terminal is attached)
+    प्रारम्भ()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

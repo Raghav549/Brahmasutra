@@ -29,3 +29,27 @@ wheels/
 .idea/
 .vscode/
 *.swp
+
+# Generated binary artefacts (build outputs, never sources)
+#   *.apk / *.bin / *.यन्त्र / *.img are produced by the builders; keeping them
+#   in git is how the repository ended up with text files named ".apk".
+*.apk
+*.bin
+*.यन्त्र
+*.img
+*.zip
+apk_output/
+apk_build/
+output/
+store/apps/*.apk
+
+# Generated demo data
+/cpu_output/
+*.dex
+# Modules emitted by the self-growing AI demos (they now write under BRAHMA_HOME;
+# these patterns catch an older run that wrote straight into the checkout).
+/स्वायत्त_*.py
+/मॉड्यूल_*.py
+/कार्य_*.py
+/निर्मित_अनुप्रयोग/
+/निर्मित_एण्ड्रॉयड/

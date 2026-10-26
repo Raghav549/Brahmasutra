@@ -4,8 +4,6 @@ import os
 import json
 import uuid
 
-print("🕉️ ब्रह्म AI Auth Engine सक्रिय")
-
 
 class ब्रह्मAuth:
 
@@ -104,11 +102,15 @@ class ब्रह्मAuth:
         return False
 
 
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global auth, token
 
-# test
-
-if __name__ == "__main__":
-
+    print("🕉️ ब्रह्म AI Auth Engine सक्रिय")
     auth = ब्रह्मAuth()
 
     auth.register("raghav","123")
@@ -116,3 +118,12 @@ if __name__ == "__main__":
     token = auth.login("raghav","123")
 
     auth.verify(token)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

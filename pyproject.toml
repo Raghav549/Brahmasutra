@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "brahma-lang"
-version = "1.1.0"
-description = "BRAHMA — a Sanskrit-native programming language with a bytecode compiler and stack VM"
+version = "2.0.0"
+description = "BRAHMA — a Sanskrit-native programming language, bytecode VM, SUTRAOS kernel and a from-scratch trainable language model, all in the standard library"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "CC0-1.0"
 license-files = ["LICENSE"]
 authors = [{ name = "BRAHMA contributors" }]
-keywords = ["sanskrit", "programming-language", "compiler", "bytecode", "virtual-machine", "interpreter"]
+keywords = ["sanskrit", "programming-language", "compiler", "bytecode", "virtual-machine", "interpreter", "language-model", "autonomous-agent"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -36,10 +36,23 @@ Issues = "https://github.com/Raghav549/Brahmasutra/issues"
 brahma = "brahma.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "flake8>=5"]
+dev = ["pytest>=7", "flake8>=5", "build>=1"]
 
 [tool.setuptools]
-packages = ["brahma"]
+packages = ["brahma", "brahma_llm"]
+# Support modules that ship with the engine: the dependency-free web stack,
+# the demo backends, the code generators and the shared CLI/path helpers.
+py-modules = [
+    "brahma_ai",
+    "brahma_auto",
+    "brahma_bytecode",
+    "brahma_chat",
+    "brahma_cli",
+    "brahma_packaging",
+    "brahma_paths",
+    "brahma_templates",
+    "brahma_web",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,13 +3,14 @@
 import os
 import uuid
 
+from brahma_paths import data_root
 class ब्रह्मअनुप्रयोगनिर्माणकोर:
 
     def __init__(self):
 
         print("🕉️ ब्रह्म अनुप्रयोग निर्माण कोर सक्रिय")
 
-        self.base_path = "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_अनुप्रयोग"
+        self.base_path = data_root("ब्रह्म_अनुप्रयोग")
 
         if not os.path.exists(self.base_path):
             os.makedirs(self.base_path)

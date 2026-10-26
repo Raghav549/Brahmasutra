@@ -1,3 +1,4 @@
+import ast
 # 🕉️ सूत्र द्विआधारी निष्पादक
 
 class सूत्रद्विआधारीनिष्पादक:
@@ -23,7 +24,9 @@ class सूत्रद्विआधारीनिष्पादक:
 
         with open(संचिका,"r",encoding="utf-8") as f:
 
-            कोड = eval(f.read())
+            # ``eval`` could execute arbitrary Python; the file only ever
+            # contains a literal list of instructions, so use a safe parser.
+            कोड = ast.literal_eval(f.read())
 
 
         for आदेश in कोड:

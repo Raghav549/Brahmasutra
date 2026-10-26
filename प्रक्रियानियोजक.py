@@ -1,7 +1,6 @@
 # सूत्र तंत्र — प्रक्रिया नियोजक
 # Sanskrit CPU Scheduler
 
-print("प्रक्रिया नियोजक आरम्भ")
 
 # प्रक्रिया सूची
 प्रक्रियासूची = []
@@ -72,20 +71,38 @@ def प्रक्रिया_स्थिति():
         print("सक्रिय:", वर्तमान["नाम"])
 
 
-# TEST
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("प्रक्रिया नियोजक आरम्भ")
 
-प्रक्रिया_निर्माण("गणक")
-प्रक्रिया_निर्माण("लेखक")
-प्रक्रिया_निर्माण("दर्शक")
 
-प्रक्रिया_स्थिति()
+    # TEST
 
-प्रक्रिया_चलाओ()
+    प्रक्रिया_निर्माण("गणक")
+    प्रक्रिया_निर्माण("लेखक")
+    प्रक्रिया_निर्माण("दर्शक")
 
-प्रक्रिया_स्थिति()
+    प्रक्रिया_स्थिति()
 
-प्रक्रिया_समाप्त()
+    प्रक्रिया_चलाओ()
 
-प्रक्रिया_स्थिति()
+    प्रक्रिया_स्थिति()
 
-print("प्रक्रिया नियोजक सक्रिय")
+    प्रक्रिया_समाप्त()
+
+    प्रक्रिया_स्थिति()
+
+    print("प्रक्रिया नियोजक सक्रिय")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

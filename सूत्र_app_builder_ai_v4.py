@@ -82,7 +82,25 @@ class सूत्रAppBuilderAIv4:
         print("पूर्ण निर्माण:",name)
 
 
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai
 
-ai = सूत्रAppBuilderAIv4()
 
-ai.प्रारम्भ()
+
+    ai = सूत्रAppBuilderAIv4()
+
+    ai.प्रारम्भ()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

@@ -2,7 +2,6 @@
 # सूत्र तंत्र — संचालन तंत्र कर्ण (Kernel)
 # =========================================
 
-print("🕉️ सूत्र संचालन तंत्र कर्ण सक्रिय")
 
 
 # प्रक्रिया सूची
@@ -79,59 +78,78 @@ def स्मृति_दर्शय():
 
 सक्रिय = True
 
-while सक्रिय:
 
-    आदेश = input("कर्ण >>> ")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global आदेश, भाग
+    print("🕉️ सूत्र संचालन तंत्र कर्ण सक्रिय")
 
-    भाग = आदेश.split()
+    while सक्रिय:
 
-    if len(भाग) == 0:
-        continue
+        आदेश = input("कर्ण >>> ")
 
+        भाग = आदेश.split()
 
-    if भाग[0] == "निर्गम":
-
-        print("कर्ण बन्द")
-
-        break
-
-
-    elif भाग[0] == "सहायता":
-
-        print("आदेश:")
-        print("निर्माण नाम")
-        print("समाप्त PID")
-        print("प्रक्रिया")
-        print("स्मृति नाम मान")
-        print("स्मृति-दर्शय")
-        print("निर्गम")
+        if len(भाग) == 0:
+            continue
 
 
-    elif भाग[0] == "निर्माण":
+        if भाग[0] == "निर्गम":
 
-        प्रक्रिया_निर्माण(भाग[1])
+            print("कर्ण बन्द")
 
-
-    elif भाग[0] == "समाप्त":
-
-        प्रक्रिया_समाप्त(int(भाग[1]))
+            break
 
 
-    elif भाग[0] == "प्रक्रिया":
+        elif भाग[0] == "सहायता":
 
-        प्रक्रिया_दर्शय()
-
-
-    elif भाग[0] == "स्मृति":
-
-        स्मृति_आवंटन(भाग[1], भाग[2])
-
-
-    elif भाग[0] == "स्मृति-दर्शय":
-
-        स्मृति_दर्शय()
+            print("आदेश:")
+            print("निर्माण नाम")
+            print("समाप्त PID")
+            print("प्रक्रिया")
+            print("स्मृति नाम मान")
+            print("स्मृति-दर्शय")
+            print("निर्गम")
 
 
+        elif भाग[0] == "निर्माण":
+
+            प्रक्रिया_निर्माण(भाग[1])
+
+
+        elif भाग[0] == "समाप्त":
+
+            प्रक्रिया_समाप्त(int(भाग[1]))
+
+
+        elif भाग[0] == "प्रक्रिया":
+
+            प्रक्रिया_दर्शय()
+
+
+        elif भाग[0] == "स्मृति":
+
+            स्मृति_आवंटन(भाग[1], भाग[2])
+
+
+        elif भाग[0] == "स्मृति-दर्शय":
+
+            स्मृति_दर्शय()
+
+
+        else:
+
+            print("अज्ञात आदेश")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-
-        print("अज्ञात आदेश")
+        raise SystemExit(_brahma_cli_run(_main))

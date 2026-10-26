@@ -70,12 +70,6 @@ class यन्त्र_प्रबंधक:
             print(नाम)
 
 
-
-# global instance
-
-प्रबंधक = यन्त्र_प्रबंधक()
-
-
 def प्रारम्भ():
 
     print("🕉️ यन्त्र तंत्र सक्रिय")
@@ -85,3 +79,28 @@ def प्रारम्भ():
     प्रबंधक.पंजीकरण("Memory")
 
     प्रबंधक.पंजीकरण("Storage")
+
+
+#: shared device manager, created on first use.
+प्रबंधक = None
+
+
+def प्रबंधक_प्राप्त():
+    """Return the shared device manager, creating it on first call."""
+    global प्रबंधक
+    if प्रबंधक is None:
+        प्रबंधक = यन्त्र_प्रबंधक()
+    return प्रबंधक
+
+
+def _main():
+    प्रबंधक_प्राप्त().सूची()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

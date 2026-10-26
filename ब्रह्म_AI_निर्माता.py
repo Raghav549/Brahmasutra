@@ -62,8 +62,13 @@ class ब्रह्मAIनिर्माता:
         return path
 
 
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, name, prompt
     ai = ब्रह्मAIनिर्माता()
 
     name = input("कार्यक्रम नाम: ")
@@ -71,3 +76,12 @@ if __name__ == "__main__":
     prompt = input("Prompt लिखें: ")
 
     ai.निर्माण(name, prompt)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

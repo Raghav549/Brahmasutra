@@ -1,6 +1,8 @@
 # 🕉️ ब्रह्म AI एकल अनुप्रयोग निर्माता VERSION 36
 
 import os
+
+from brahma_templates import write_status_server
 import re
 
 class ब्रह्मएकलअनुप्रयोगनिर्माता:
@@ -102,28 +104,9 @@ JSON.stringify(d)
 
     def बैकएंड(self, app_path, prompt):
 
-        code = f'''
-# 🕉️ BRAHMA AI BACKEND
+        written = write_status_server(app_path + "/backend", prompt)
 
-from flask import Flask, jsonify
-
-app = Flask(__name__)
-
-@app.route("/api")
-def api():
-
-    return jsonify({{
-        "status":"ok",
-        "app":"{prompt}",
-        "engine":"BRAHMA AI VERSION 36"
-    }})
-
-if __name__ == "__main__":
-    app.run(port=5000)
-'''
-
-        with open(app_path + "/backend/api.py", "w") as f:
-            f.write(code)
+        return written
 
     def डेटाबेस(self, app_path):
 

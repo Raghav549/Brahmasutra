@@ -2,7 +2,6 @@
 # सूत्र तंत्र — बाइटकोड निर्माता
 # =========================================
 
-print("🕉️ सूत्र बाइटकोड निर्माता सक्रिय")
 
 
 # आदेश से बाइटकोड mapping
@@ -46,27 +45,46 @@ def संचिका_लिखो(नाम, पंक्तियाँ):
 
             f.write(पंक्ति + "\n")
 
-
-# input program
-इनपुट = input("प्रोग्राम संचिका नाम: ")
-
-# output bytecode file
-आउटपुट = input("बाइटकोड संचिका नाम: ")
-
-
-पंक्तियाँ = संचिका_पढ़ो(इनपुट)
-
 बाइटसूची = []
 
-for पंक्ति in पंक्तियाँ:
 
-    पंक्ति = पंक्ति.strip()
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global आउटपुट, इनपुट, पंक्ति, पंक्तियाँ, यदि
+    print("🕉️ सूत्र बाइटकोड निर्माता सक्रिय")
 
-    यदि = बाइटकोड_निर्माण(पंक्ति)
 
-    बाइटसूची.append(यदि)
+    # input program
+    इनपुट = input("प्रोग्राम संचिका नाम: ")
+
+    # output bytecode file
+    आउटपुट = input("बाइटकोड संचिका नाम: ")
 
 
-संचिका_लिखो(आउटपुट, बाइटसूची)
+    पंक्तियाँ = संचिका_पढ़ो(इनपुट)
 
-print("बाइटकोड निर्मित:", आउटपुट)
+    for पंक्ति in पंक्तियाँ:
+
+        पंक्ति = पंक्ति.strip()
+
+        यदि = बाइटकोड_निर्माण(पंक्ति)
+
+        बाइटसूची.append(यदि)
+
+
+    संचिका_लिखो(आउटपुट, बाइटसूची)
+
+    print("बाइटकोड निर्मित:", आउटपुट)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

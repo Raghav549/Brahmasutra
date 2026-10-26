@@ -1,67 +1,35 @@
+"""ब्रह्म चैट सर्वर — केवल मानक लाइब्रेरी।
 
-from flask import Flask,request,jsonify
-from flask_cors import CORS
-import json,uuid,os
+यह फ़ाइल पहले Flask + flask_cors पर निर्भर थी, जो कहीं घोषित नहीं थे, इसलिए
+सर्वर कभी शुरू नहीं होता था। अब यह वही API :mod:`brahma_chat` (stdlib) से
+परोसती है: /status /register /login /dashboard /send /chat
 
-app = Flask(__name__)
-CORS(app)
+चलाएँ::
 
-DB="users.json"
+    python ब्रह्म_AI_अनुप्रयोग/chat_app/backend/server.py --port 9000
+"""
 
-if not os.path.exists(DB):
- open(DB,"w").write("{}")
+import os
+import sys
 
-def load():
- return json.load(open(DB))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = _HERE
+while not os.path.exists(os.path.join(_ROOT, "brahma_chat.py")):
+    _parent = os.path.dirname(_ROOT)
+    if _parent == _ROOT:
+        raise ImportError("brahma_chat.py नहीं मिला — रिपॉज़िटरी रूट से चलाएँ")
+    _ROOT = _parent
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
-def save(d):
- json.dump(d,open(DB,"w"))
 
-TOKENS={}
+from brahma_chat import main as chat_main
 
-@app.route("/status")
-def status():
- return jsonify({"status":"RUNNING"})
 
-@app.route("/register",methods=["POST"])
-def register():
- d=request.json
- u=d["username"]
- p=d["password"]
+def main(argv=None):
+    """सर्वर चलाएँ (``--once`` से केवल पोर्ट बाँधकर जाँचें)।"""
+    return chat_main(argv, default_port=9000, admin=False)
 
- db=load()
 
- if u in db:
-  return jsonify({"status":"exists"})
-
- db[u]=p
- save(db)
-
- return jsonify({"status":"ok"})
-
-@app.route("/login",methods=["POST"])
-def login():
- d=request.json
- u=d["username"]
- p=d["password"]
-
- db=load()
-
- if u in db and db[u]==p:
-  t=str(uuid.uuid4())
-  TOKENS[t]=u
-  return jsonify({"status":"ok","token":t})
-
- return jsonify({"status":"fail"})
-
-@app.route("/dashboard")
-def dash():
-
- t=request.headers.get("token")
-
- if t in TOKENS:
-  return jsonify({"status":"ok","user":TOKENS[t]})
-
- return jsonify({"status":"unauthorized"})
-
-app.run(host="0.0.0.0",port=9000)
+if __name__ == "__main__":
+    raise SystemExit(main())

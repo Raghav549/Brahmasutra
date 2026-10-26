@@ -40,6 +40,14 @@ Concretely, at the audited commit:
 4. **Repository hygiene**: `.gitignore`, `pyproject.toml`, 386 committed `__pycache__/*.pyc` files untracked, 3 syntax errors and 3 runtime bugs fixed.
 5. **This audit**, plus a language specification and a testing guide.
 
+6. **A language model that lives here (2.0.0)** — `brahma_llm/`: an akṣara
+   tokenizer, two trainable models (n-gram and a neural LM with hand-written
+   backpropagation verified against central differences), a target-driven
+   autonomous trainer, prediction-preserving self-editing, a सूत्र-OS kernel
+   image that must boot before it can be installed, and the model's own maths
+   written in सूत्र and executed on the project VM. Measured numbers, not
+   adjectives: see **[docs/LLM.md](LLM.md)**.
+
 Numbers before → after:
 
 | Metric | Before | After |
@@ -512,3 +520,81 @@ Largest error clusters by module family: `सूत्र_*` core (API drift), `
 ---
 
 *यह लेखा-परीक्षा `docs/AUDIT.md` में स्थिर है और CI द्वारा `pytest` + `tools/legacy_baseline.py --check` के माध्यम से सुरक्षित है।*
+
+---
+
+## 10. v1.2.0 — "fix each and every file" (this release)
+
+The 1.1.0 audit above describes the tree at `27980b8`. This section records what
+changed afterwards, and how each claim is verified.
+
+### 10.1 What was done, file by file
+
+| Area | Before (1.1.0) | After (1.2.0) | Verification |
+|---|---:|---:|---|
+| Python files audited | — | **748** | `find . -name '*.py'` |
+| Modules with import-time side effects | 413 | **0** | `python tools/harden_imports.py` |
+| Modules loading standalone (probe by file path) | 589 / 725 | **735 / 748** | import matrix, §10.3 |
+| Modules importing correctly as packages | 725 / 725 | **748 / 748** | `python -c "import brahma…"` |
+| Legacy demo scripts passing | 40 / 51 | **51 / 51** | `tools/legacy_baseline.py` |
+| Demo scripts crashing with a traceback | 11 | **0** | root sweep, §10.3 |
+| Automated tests | 326 (12 xfail) | **456 (0 xfail)** | `pytest -q` |
+| flake8 (`brahma tests tools`) | 0 | **0** | CI |
+| Committed binary artefacts | 13 fake/`stale` | **0** (deleted + ignored) | `git ls-files '*.apk' '*.bin'` |
+
+`tools/harden_imports.py` performed the bulk of the work with a
+**statement-level** AST transform:
+
+* moved to `_main()`: calls (`print`, `input`, `app.run`, …), loops, `if`
+  blocks that call, assignments whose value calls something impure,
+  `try`/`with`/`raise`/`assert`, and the body of existing `__main__` guards;
+* kept at module level: imports (including `from __future__`), class and
+  function definitions, docstrings and constant assignments — so
+  `from module import SomeClass` keeps working;
+* every rewrite verified by (a) re-parsing, (b) comparing script behaviour
+  before/after with volatile tokens normalised, (c) re-importing the module;
+  anything that fails a check is restored byte-for-byte.
+
+### 10.2 Real defects fixed in this pass
+
+| Defect | Impact | Fix |
+|---|---|---|
+| Flask imported in 9 backends but declared nowhere | every demo server raised `ModuleNotFoundError` | rewritten on the stdlib (`brahma_web` + `brahma_chat`) |
+| `POST /run` executed client-supplied files **in-process** | unauthenticated RCE + path traversal | name validation, subprocess, timeout, opt-in via `BRAHMA_ALLOW_EXEC=1` |
+| `os.system(f"termux-open '{path}'")` with user input | shell injection | argument vectors via `subprocess` |
+| `eval(file.read())` in the binary executor | arbitrary code execution | `ast.literal_eval` |
+| 5 compilers, 4 incompatible bytecode layouts | compiled files could not be executed | one documented format (`brahma_bytecode`) + 4 shims |
+| `सूत्रBinaryLoader.load_and_run()` called but never defined | OS loader always crashed | method added, malformed images raise |
+| 3 module-level constants (`डिफ़ॉल्ट_मूल`, `BASE`, `HOME`) moved behind guards by the first transform attempt | `NameError` at first use | `--hoist-pure` repair pass + pure-call allowlist |
+| `परीक्षण.py` / `अनुसूचक_परीक्षण.py` infinite loops | demos could never finish | bounded rounds, `--rounds` option |
+| shells blocking on `input()` during boot | boot sequence hung headless | `प्रारम्भ(interactive=None)` detects a terminal |
+| `admin123` hard-coded | credential leak in git | password from `BRAHMA_ADMIN_PASSWORD`, generated otherwise |
+| 8 committed `.apk` text files, stale `.bin`/`.img` | artefacts lied about being apps | deleted, `.gitignore`d, `is_installable_apk()` added |
+
+### 10.3 Reproducing the matrix
+
+```bash
+python tools/harden_imports.py                 # 0 files with import-time effects
+python tools/legacy_baseline.py                # 51/51 legacy scripts pass
+pytest -q --cov=brahma                        # 414 passed, 93 %
+flake8 brahma tests tools                     # 0
+python -m build                               # sdist + wheel
+```
+
+Remaining import-matrix entries (13 of 748) are **artefacts of the probe**, not
+of the code: `brahma/*` uses relative imports and `@dataclass`, so loading a
+single file by path with a synthetic module name fails while
+`import brahma.parser` succeeds — verified in the same run.
+
+### 10.4 What is still *not* true (kept honest)
+
+* The `.apk` builder produces **ZIP bundles**, not installable apps; a real APK
+  needs `aapt2`, `d8` and a keystore. `brahma_packaging.is_installable_apk()`
+  returns `False` for every file this repository can build.
+* `brahma_ai` is a real **n-gram** model and a keyword router — not a neural
+  network, not an LLM, and it does not generate code by itself: the
+  `*_creator_ai_*` scripts are template generators driven by it.
+* The legacy OS-style layer (`kernel/`, `os/`) remains a prototype; the C kernel
+  is a userspace REPL and the `.iso` is a tar archive.
+* `mypy --strict` is **not** wired into CI yet (roadmap item 5); typing is
+  gradual (`from __future__ import annotations` + annotations on new modules).

@@ -1,6 +1,5 @@
 # 🕉️ ब्रह्म वर्ण कोर VERSION 2 FIXED FULL
 
-print("🕉️ ब्रह्म वर्ण कोर सक्रिय")
 
 
 class ब्रह्मवर्णकोर:
@@ -66,9 +65,14 @@ class ब्रह्मवर्णकोर:
         return "अमान्य"
 
 
-# परीक्षण
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global कोर, परीक्षण, वर्ण
+    print("🕉️ ब्रह्म वर्ण कोर सक्रिय")
     कोर = ब्रह्मवर्णकोर()
 
     परीक्षण = [
@@ -83,3 +87,12 @@ if __name__ == "__main__":
     for वर्ण in परीक्षण:
 
         print(वर्ण, "→", कोर.मान्य(वर्ण), कोर.प्रकार(वर्ण))
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

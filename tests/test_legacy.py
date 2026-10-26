@@ -109,3 +109,33 @@ def test_legacy_scripts_do_not_import_the_new_package():
         timeout=TIMEOUT,
     )
     assert completed.returncode == 0
+
+
+def test_no_module_has_import_time_side_effects():
+    """Importing any module in the tree must not print, prompt, loop or serve.
+
+    ``tools/harden_imports.py`` classifies every top-level statement; this test
+    fails if a new module (or a careless edit) reintroduces import-time work.
+    """
+    from tools import harden_imports
+
+    offenders = []
+    for path in harden_imports.iter_python_files():
+        info = harden_imports.plan(path)
+        if info and info["kind"] == "guard-tail":
+            offenders.append(os.path.relpath(path, REPO_ROOT))
+
+    assert offenders == [], "import-time side effects फिर आ गए: %s" % offenders
+
+
+def test_no_third_party_imports_in_optional_modules():
+    """The demo backends must not depend on Flask/requests being installed."""
+    from tools import harden_imports
+
+    offenders = []
+    for path in harden_imports.iter_python_files():
+        info = harden_imports.plan(path)
+        if info and info.get("third_party"):
+            offenders.append((os.path.relpath(path, REPO_ROOT), info["third_party"]))
+
+    assert offenders == [], "third-party imports मिले: %s" % offenders

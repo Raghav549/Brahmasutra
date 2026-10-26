@@ -6,31 +6,49 @@
 
 REGISTERS = {"अ": 0, "ब": 1, "स": 2, "द": 3}
 
-data = bytearray()
 
-# LOAD अ 10
-data.append(1)
-data.append(REGISTERS["अ"])
-data += (10).to_bytes(4, "big")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global data, f
 
-# LOAD ब 20
-data.append(1)
-data.append(REGISTERS["ब"])
-data += (20).to_bytes(4, "big")
+    data = bytearray()
 
-# ADD अ ब
-data.append(2)
-data.append(REGISTERS["अ"])
-data.append(REGISTERS["ब"])
+    # LOAD अ 10
+    data.append(1)
+    data.append(REGISTERS["अ"])
+    data += (10).to_bytes(4, "big")
 
-# SHOW अ
-data.append(3)
-data.append(REGISTERS["अ"])
+    # LOAD ब 20
+    data.append(1)
+    data.append(REGISTERS["ब"])
+    data += (20).to_bytes(4, "big")
 
-# END
-data.append(4)
+    # ADD अ ब
+    data.append(2)
+    data.append(REGISTERS["अ"])
+    data.append(REGISTERS["ब"])
 
-with open("test.सूत्रबिन", "wb") as f:
-    f.write(data)
+    # SHOW अ
+    data.append(3)
+    data.append(REGISTERS["अ"])
 
-print("Binary created")
+    # END
+    data.append(4)
+
+    with open("test.सूत्रबिन", "wb") as f:
+        f.write(data)
+
+    print("Binary created")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

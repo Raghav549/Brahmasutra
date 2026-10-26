@@ -4,12 +4,12 @@
 
 ```bash
 python -m pip install -e ".[dev]" pytest-cov
-pytest -q                                   # 326 tests, ~5 s
+pytest -q                                   # 456 tests, ~15 s
 pytest -q --cov=brahma --cov-report=term-missing
-flake8 brahma tests tools
+flake8 brahma tests tools brahma_llm
 ```
 
-Expected result: **326 passed, 12 xfailed**, 93 % statement coverage of the
+Expected result: **456 passed, 0 xfailed**, 93 % statement coverage of the
 engine, `flake8` exit code 0.
 
 ## Layout
@@ -23,7 +23,9 @@ engine, `flake8` exit code 0.
 | `tests/test_vm.py` | semantics: arithmetic, strings, lists, logic, control flow, functions, builtins, limits, tracebacks |
 | `tests/test_cli.py` | every CLI command (subprocess **and** in-process), REPL |
 | `tests/test_integration.py` | all example programs, source↔bytecode equivalence, public API, packaging |
-| `tests/test_legacy.py` | the historical demo tree: 51 scripts + 20 module imports, pinned to a baseline |
+| `tests/test_legacy.py` | the historical demo tree: 51 scripts + 23 module imports, pinned to a baseline |
+| `tests/test_web_stack.py` | web stack, chat backend, bytecode format, CLI helper, generators, packaging, AI model |
+| `tests/test_llm.py` | ब्रह्म-LLM: tokenizer, n-gram + neural LM, **gradient check**, सूत्र↔Python forward pass, kernel image, generator validity, self-editing invariants, autonomous loop, app builder, `brahma llm` CLI |
 | `tests/conftest.py` | helpers (`output_of`, `repo_copy` sandbox fixture) |
 | `tools/legacy_baseline.py` | regenerates / verifies the legacy baseline |
 
@@ -50,6 +52,24 @@ git diff tests/legacy_baseline.json    # the fix shows up as pass ← fail
 The tool never writes into the checkout: it copies the repository to a temporary
 directory first, because several demos write output files into the working
 directory.
+
+## The sub-directory demo sweep
+
+`tools/demo_sweep.py` runs the 264 scripts that live in sub-directories
+(`कृत्रिमबुद्धि/`, `engine/`, `vm/`, the demo app backends, …), which the legacy
+baseline does not cover. It classifies each script as `ok`, `usage` (needs
+arguments or a terminal), `server` (a socket/GUI loop that is *supposed* to
+block — the unit suite smoke-tests those with `--once`) or `fail`.
+
+```bash
+python tools/demo_sweep.py --check          # exit 1 if anything fails
+python tools/demo_sweep.py --json report.json
+```
+
+Current measured result: **232 ok, 26 servers, 6 usage, 0 failures** in ~11 s.
+Before 2.0.0 the same sweep found **49** failures: scripts that could not import
+their own package, demos that raised `EOFError` without a terminal, and two
+programs with working-directory-relative paths.
 
 ## CI jobs (`.github/workflows/python-package.yml`)
 

@@ -1,6 +1,5 @@
 # सूत्र तंत्र — Sanskrit Shell
 
-print("सूत्र Shell आरम्भ")
 
 
 
@@ -96,8 +95,20 @@ def shell():
         आदेश_चलाओ(cmd)
 
 
-
-# start
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("सूत्र Shell आरम्भ")
     shell()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

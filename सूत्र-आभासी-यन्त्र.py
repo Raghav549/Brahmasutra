@@ -2,8 +2,6 @@
 # सूत्र तंत्र — आभासी यन्त्र
 # =========================================
 
-print("🕉️ सूत्र आभासी-यन्त्र सक्रिय")
-print("आदेश: सहायता")
 
 
 # स्मृति
@@ -120,45 +118,65 @@ def कार्य_चलाओ():
 
 सक्रिय = True
 
-while सक्रिय:
 
-    आदेश = input("यन्त्र >>> ")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global आदेश, नया
+    print("🕉️ सूत्र आभासी-यन्त्र सक्रिय")
+    print("आदेश: सहायता")
 
-    if आदेश == "निर्गम":
+    while सक्रिय:
 
-        print("आभासी यन्त्र बन्द")
+        आदेश = input("यन्त्र >>> ")
 
-        break
+        if आदेश == "निर्गम":
 
+            print("आभासी यन्त्र बन्द")
 
-    elif आदेश == "सहायता":
-
-        print("आदेश:")
-        print("स्थापय अ 10")
-        print("योग अ ब")
-        print("स्मृति क अ")
-        print("लोड ब क")
-        print("दर्शय")
-        print("स्मृति-दर्शय")
-        print("जोड़ो आदेश")
-        print("चलाओ")
-        print("निर्गम")
+            break
 
 
-    elif आदेश.startswith("जोड़ो"):
+        elif आदेश == "सहायता":
 
-        नया = आदेश[5:]
+            print("आदेश:")
+            print("स्थापय अ 10")
+            print("योग अ ब")
+            print("स्मृति क अ")
+            print("लोड ब क")
+            print("दर्शय")
+            print("स्मृति-दर्शय")
+            print("जोड़ो आदेश")
+            print("चलाओ")
+            print("निर्गम")
 
-        कार्यसूची.append(नया)
 
-        print("कार्य जोड़ा गया")
+        elif आदेश.startswith("जोड़ो"):
+
+            नया = आदेश[5:]
+
+            कार्यसूची.append(नया)
+
+            print("कार्य जोड़ा गया")
 
 
-    elif आदेश == "चलाओ":
+        elif आदेश == "चलाओ":
 
-        कार्य_चलाओ()
+            कार्य_चलाओ()
 
 
+        else:
+
+            आदेश_निष्पादन(आदेश)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-
-        आदेश_निष्पादन(आदेश)
+        raise SystemExit(_brahma_cli_run(_main))

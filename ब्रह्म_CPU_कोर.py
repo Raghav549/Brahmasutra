@@ -1,7 +1,6 @@
 # 🕉️ ब्रह्म CPU कोर
 # VERSION 13
 
-print("🕉️ ब्रह्म CPU कोर सक्रिय")
 
 from ब्रह्म_स्मृति_प्रबंधक_कोर import ब्रह्मस्मृतिप्रबंधककोर
 
@@ -106,9 +105,13 @@ class ब्रह्मCPUकोर:
         print(f"{नाम} = {value}")
 
 
-# TEST
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("🕉️ ब्रह्म CPU कोर सक्रिय")
     cpu = ब्रह्मCPUकोर()
 
     cpu.स्थापित("अ", 10)
@@ -126,3 +129,7 @@ if __name__ == "__main__":
     cpu.गुणा("अ", "ब")
 
     cpu.दर्शय("अ")
+
+
+if __name__ == "__main__":
+    _main()

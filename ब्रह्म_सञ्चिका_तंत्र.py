@@ -1,12 +1,13 @@
 import os
 
 
+from brahma_paths import data_root
 class ब्रह्मसञ्चिकातंत्र:
 
 
     def __init__(self):
 
-        self.root = "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_सञ्चिका"
+        self.root = data_root("ब्रह्म_सञ्चिका")
 
         os.makedirs(self.root, exist_ok=True)
 

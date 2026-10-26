@@ -1,7 +1,6 @@
 # सूत्र तंत्र — Kernel
 # पूर्णतः संस्कृत आधारित Operating System core
 
-print("सूत्र कर्नेल आरम्भ")
 
 # प्रक्रिया तालिका
 प्रक्रियाएँ = {}
@@ -76,16 +75,35 @@ def प्रक्रिया_सूची():
         print("ID:", p.ID, "नाम:", p.नाम, "स्थिति:", p.स्थिति)
 
 
-# Test kernel
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global p1, p2
+    print("सूत्र कर्नेल आरम्भ")
 
-p1 = प्रक्रिया_निर्माण("गणना")
-p2 = प्रक्रिया_निर्माण("संग्रह")
 
-प्रक्रिया_चलाओ(p1.ID)
-प्रक्रिया_चलाओ(p2.ID)
+    # Test kernel
 
-प्रक्रिया_रोको(p1.ID)
+    p1 = प्रक्रिया_निर्माण("गणना")
+    p2 = प्रक्रिया_निर्माण("संग्रह")
 
-प्रक्रिया_सूची()
+    प्रक्रिया_चलाओ(p1.ID)
+    प्रक्रिया_चलाओ(p2.ID)
 
-print("सूत्र कर्नेल सक्रिय")
+    प्रक्रिया_रोको(p1.ID)
+
+    प्रक्रिया_सूची()
+
+    print("सूत्र कर्नेल सक्रिय")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

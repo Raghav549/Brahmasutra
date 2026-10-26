@@ -1,3 +1,10 @@
+import os as _os
+import sys as _sys
+
+_ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+if _ROOT not in _sys.path:  # रिपॉज़िटरी रूट से sibling packages import करें
+    _sys.path.append(_ROOT)
+
 from vm.instructions import निर्देश
 from vm.callstack import CallStack
 

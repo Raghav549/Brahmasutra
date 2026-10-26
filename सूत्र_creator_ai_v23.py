@@ -3,8 +3,6 @@ import random
 import zipfile
 import subprocess
 
-print("🕉️ सूत्र Universal Creator AI v23 सक्रिय")
-
 class सूत्रCreatorAIv23:
 
     def __init__(self):
@@ -191,19 +189,39 @@ assets/index.html
         print("पूर्ण App निर्माण:", root)
 
 
-ai = सूत्रCreatorAIv23()
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, cmd
 
-while True:
+    print("🕉️ सूत्र Universal Creator AI v23 सक्रिय")
 
-    cmd = input("CreatorAIv23 >>> ")
 
-    if cmd == "निर्गम":
-        break
+    ai = सूत्रCreatorAIv23()
 
-    if cmd.startswith("create") or cmd.startswith("app") or cmd.startswith("website"):
+    while True:
 
-        ai.create(cmd)
+        cmd = input("CreatorAIv23 >>> ")
 
+        if cmd == "निर्गम":
+            break
+
+        if cmd.startswith("create") or cmd.startswith("app") or cmd.startswith("website"):
+
+            ai.create(cmd)
+
+        else:
+
+            print("अज्ञात आदेश")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-
-        print("अज्ञात आदेश")
+        raise SystemExit(_brahma_cli_run(_main))

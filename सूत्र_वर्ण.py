@@ -1,7 +1,6 @@
 # 🕉️ BRAHMA VERSION 1
 # सूत्र वर्ण प्रणाली
 
-print("🕉️ सूत्र वर्ण प्रणाली सक्रिय")
 
 class वर्णप्रणाली:
 
@@ -44,9 +43,14 @@ class वर्णप्रणाली:
         return अक्षर in self.सर्व
 
 
-# परीक्षण
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global अक्षर, परीक्षण, प्रणाली
+    print("🕉️ सूत्र वर्ण प्रणाली सक्रिय")
     प्रणाली = वर्णप्रणाली()
 
     print("मान्य वर्ण परीक्षण:")
@@ -62,3 +66,12 @@ if __name__ == "__main__":
         else:
 
             print(अक्षर, "अमान्य")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

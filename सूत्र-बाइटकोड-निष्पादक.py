@@ -2,7 +2,6 @@
 # सूत्र तंत्र — बाइटकोड निष्पादक
 # =========================================
 
-print("🕉️ सूत्र बाइटकोड निष्पादक सक्रिय")
 
 
 रजिस्टर = {
@@ -119,6 +118,25 @@ def संचिका_चलाओ(नाम):
     print("बाइटकोड निष्पादन समाप्त")
 
 
-नाम = input("बाइटकोड संचिका नाम: ")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global नाम
+    print("🕉️ सूत्र बाइटकोड निष्पादक सक्रिय")
 
-संचिका_चलाओ(नाम)
+
+    नाम = input("बाइटकोड संचिका नाम: ")
+
+    संचिका_चलाओ(नाम)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

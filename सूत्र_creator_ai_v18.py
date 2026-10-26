@@ -4,12 +4,10 @@
 import os
 import random
 import subprocess
+import sys
 import threading
 import http.server
 import socketserver
-
-
-print("🕉️ Creator AI v18 सक्रिय")
 
 
 class CreatorAIv18:
@@ -208,7 +206,7 @@ print("system active")
 
         print("🕉️ Full software generated")
 
-        subprocess.run(["python",root+"/main.py"])
+        subprocess.run([sys.executable,root+"/main.py"])
 
         self.deploy_thread(root)
 
@@ -216,15 +214,36 @@ print("system active")
         print("Location:",root)
 
 
-# run
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, p
 
-ai=CreatorAIv18()
 
-while True:
+    print("🕉️ Creator AI v18 सक्रिय")
 
-    p=input("CreatorAIv18 >>> ")
 
-    if p=="निर्गम":
-        break
+    # run
 
-    ai.generate(p)
+    ai=CreatorAIv18()
+
+    while True:
+
+        p=input("CreatorAIv18 >>> ")
+
+        if p=="निर्गम":
+            break
+
+        ai.generate(p)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

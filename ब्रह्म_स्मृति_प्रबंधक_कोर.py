@@ -1,7 +1,6 @@
 # 🕉️ ब्रह्म स्मृति प्रबंधक कोर
 # VERSION 12
 
-print("🕉️ ब्रह्म स्मृति प्रबंधक कोर सक्रिय")
 
 
 class ब्रह्मस्मृतिखण्ड:
@@ -90,9 +89,14 @@ class ब्रह्मस्मृतिप्रबंधककोर:
             print(f"{address} = {value}")
 
 
-# test
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global addr1, addr2, memory
+    print("🕉️ ब्रह्म स्मृति प्रबंधक कोर सक्रिय")
     memory = ब्रह्मस्मृतिप्रबंधककोर()
 
     addr1 = memory.आवंटन(10)
@@ -110,3 +114,12 @@ if __name__ == "__main__":
     memory.मुक्त(addr2)
 
     memory.सूची()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

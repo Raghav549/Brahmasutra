@@ -1,87 +1,58 @@
-# 🕉️ सूत्र संकलक (Compiler)
+"""🕉️ सूत्र संकलक (compiler).
+
+The repository used to contain five compilers writing four incompatible
+bytecode layouts.  All of them now assemble to the format documented in
+:mod:`brahma_bytecode`, and the same module executes the result, so a compiled
+``.यन्त्र`` file is guaranteed to run.
+
+Names kept for compatibility with the existing demos::
+
+    सूत्रसंकलक = संकलक
+    संकलक().संकलन(...)   # historical name of संकलित(...)
+
+>>> सूत्रसंकलक().संकलित  # doctest: +ELLIPSIS
+<bound method संकलक.संकलित ...>
+"""
+
+from __future__ import annotations
+
+import brahma_bytecode
+
 
 class संकलक:
+    """Assemble सूत्र source (a file or text) into bytecode."""
 
+    #: मnemonic → opcode (mirrors :data:`brahma_bytecode.OPCODES`)
+    OPCODES = dict(brahma_bytecode.OPCODES)
 
-    OPCODES = {
+    #: register names
+    REGISTERS = dict(brahma_bytecode.REGISTERS)
 
-        "संकल्प": 1,
-        "योग": 2,
-        "दर्शय": 3,
-        "निर्गम": 4
-
-    }
-
-
-    REGISTERS = {
-
-        "अ": 1,
-        "ब": 2,
-        "स": 3,
-        "द": 4
-
-    }
-
-
-    def संकलित(self, input_file, output_file):
-
-        bytecode = []
-
-
-        with open(input_file, encoding="utf-8") as f:
-
-            lines = f.readlines()
-
-
-        for line in lines:
-
-            parts = line.strip().split()
-
-            if not parts:
-                continue
-
-
-            cmd = parts[0]
-
-
-            if cmd == "संकल्प":
-
-                bytecode.append(self.OPCODES[cmd])
-                bytecode.append(self.REGISTERS[parts[1]])
-                bytecode.append(int(parts[2]))
-
-
-            elif cmd == "योग":
-
-                bytecode.append(self.OPCODES[cmd])
-                bytecode.append(self.REGISTERS[parts[1]])
-                bytecode.append(self.REGISTERS[parts[2]])
-
-
-            elif cmd == "दर्शय":
-
-                bytecode.append(self.OPCODES[cmd])
-                bytecode.append(self.REGISTERS[parts[1]])
-
-
-            elif cmd == "निर्गम":
-
-                bytecode.append(self.OPCODES[cmd])
-
-
-        with open(output_file, "wb") as f:
-
-            f.write(bytes(bytecode))
-
-
+    def संकलित(self, input_file: str, output_file: str) -> bytes:
+        """Assemble ``input_file`` into ``output_file``; return the bytecode."""
+        print("संकलन प्रारम्भ:", input_file)
+        code = brahma_bytecode.assemble_file(input_file, output_file)
         print("🕉️ संकलन सफल:", output_file)
+        return code
+
+    def संकलित_पाठ(self, पाठ: str) -> bytes:
+        """Assemble सूत्र source text (no files involved)."""
+        return brahma_bytecode.assemble(पाठ)
+
+    def अनुवाद(self, आदेश: str):
+        """Translate a single mnemonic to its opcode (``None`` when empty)."""
+        भाग = आदेश.split()
+        if not भाग:
+            return None
+        if भाग[0] not in self.OPCODES:
+            raise brahma_bytecode.असेंबली_त्रुटि("अज्ञात आदेश %r" % भाग[0])
+        return self.OPCODES[भाग[0]]
 
 
-# ---------------------------------------------------------------------------
-# अनुकूलता (compatibility) — पुराने डेमो `सूत्रसंकलक` नाम और `संकलन` विधि
-# का उपयोग करते हैं। ये aliases उन्हें बिना बदले चलने देते हैं।
-# ---------------------------------------------------------------------------
+#: ``संकलन-परीक्षण.py`` calls ``संकलक.संकलन()``; that name predates ``संकलित``.
+संकलक.संकलन = संकलक.संकलित  # type: ignore[attr-defined]
+
+#: historical alias
 सूत्रसंकलक = संकलक
 
-if not hasattr(संकलक, "संकलन"):
-    संकलक.संकलन = संकलक.संकलित
+__all__ = ["संकलक", "सूत्रसंकलक"]

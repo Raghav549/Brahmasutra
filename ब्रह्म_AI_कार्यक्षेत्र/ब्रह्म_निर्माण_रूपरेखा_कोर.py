@@ -1,3 +1,22 @@
+
+
+# --- headless-safe input -----------------------------------------------------
+# These demos read from a terminal.  Under CI, `nohup` or the legacy baseline
+# there is no terminal, and a raw `input()` raises EOFError (exit 1) or spins.
+# `_इनपुट` behaves like `input()` interactively and stops cleanly otherwise.
+_EOF_गिनती = {"n": 0}
+
+
+def _इनपुट(prompt=""):
+    try:
+        return input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        _EOF_गिनती["n"] += 1
+        if _EOF_गिनती["n"] > 1:
+            raise SystemExit(0)
+        return "निर्गम"
+
 # 🕉️ BRAHMA CREATION BLUEPRINT ENGINE
 # VERSION 110
 # FULL SANSKRIT APPLICATION STRUCTURE GENERATOR
@@ -8,8 +27,6 @@ import uuid
 import datetime
 
 from ब्रह्म_प्रॉम्प्ट_बोध_कोर import ब्रह्मप्रॉम्प्टबोधकोर
-
-print("🕉️ ब्रह्म निर्माण रूपरेखा कोर सक्रिय (VERSION 110)")
 
 
 class ब्रह्मनिर्माणरूपरेखाकोर:
@@ -117,12 +134,18 @@ class ब्रह्मनिर्माणरूपरेखाकोर:
         return blueprint
 
 
-# test
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global blueprint, core, key, prompt
 
+    print("🕉️ ब्रह्म निर्माण रूपरेखा कोर सक्रिय (VERSION 110)")
     core = ब्रह्मनिर्माणरूपरेखाकोर()
 
-    prompt = input("🕉️ प्रॉम्प्ट लिखें: ")
+    prompt = _इनपुट("🕉️ प्रॉम्प्ट लिखें: ")
 
     blueprint = core.निर्माण(prompt)
 
@@ -131,3 +154,12 @@ if __name__ == "__main__":
     for key in blueprint:
 
         print(key, ":", blueprint[key])
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

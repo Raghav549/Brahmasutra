@@ -1,10 +1,11 @@
 import os
 
+from brahma_paths import data_root
 class ब्रह्मअनुप्रयोगनिष्पादनकोर:
 
     def __init__(self):
 
-        self.स्थापित_पथ = "/data/data/com.termux/files/home/सूत्र-तंत्र/ब्रह्म_स्थापित"
+        self.स्थापित_पथ = data_root("ब्रह्म_स्थापित")
 
         print("🕉️ ब्रह्म अनुप्रयोग निष्पादन कोर सक्रिय")
 

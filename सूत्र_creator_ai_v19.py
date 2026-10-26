@@ -6,8 +6,6 @@ import random
 import subprocess
 import zipfile
 
-print("🕉️ Creator AI v19 सक्रिय")
-
 
 class CreatorAIv19:
 
@@ -120,15 +118,35 @@ document.getElementById("out").innerText="AI Running"
         print("🕉️ Installable APK ready")
 
 
-# run
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, p
 
-ai=CreatorAIv19()
+    print("🕉️ Creator AI v19 सक्रिय")
 
-while True:
 
-    p=input("CreatorAIv19 >>> ")
+    # run
 
-    if p=="निर्गम":
-        break
+    ai=CreatorAIv19()
 
-    ai.generate(p)
+    while True:
+
+        p=input("CreatorAIv19 >>> ")
+
+        if p=="निर्गम":
+            break
+
+        ai.generate(p)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

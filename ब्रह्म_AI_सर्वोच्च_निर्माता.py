@@ -2,12 +2,13 @@
 # VERSION 44 FINAL ASCENSION
 
 import os
+
+from brahma_templates import write_chat_server
 import subprocess
+import sys
 import threading
 import http.server
 import socketserver
-
-print("🕉️ BRAHMA AI VERSION 44 FINAL ASCENSION ACTIVE")
 
 
 class ब्रह्मसर्वोच्चनिर्माता:
@@ -27,30 +28,9 @@ class ब्रह्मसर्वोच्चनिर्माता:
 
         os.makedirs(path, exist_ok=True)
 
-        code = f'''
-from flask import Flask, request, jsonify
+        written = write_chat_server(path, app)
 
-app = Flask(__name__)
-
-@app.route("/status")
-def status():
-    return jsonify({{"status":"BRAHMA BACKEND ACTIVE"}})
-
-@app.route("/login", methods=["POST"])
-def login():
-    return jsonify({{"status":"login success"}})
-
-@app.route("/register", methods=["POST"])
-def register():
-    return jsonify({{"status":"register success"}})
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=9000)
-'''
-
-        open(path + "/server.py", "w").write(code)
-
-        return path
+        return written
 
     def frontend_निर्माण(self, app):
 
@@ -95,7 +75,7 @@ document.getElementById("result").innerText=d.status
     def backend_run(self, path):
 
         def run():
-            subprocess.run(["python", path + "/server.py"])
+            subprocess.run([sys.executable, path + "/server.py"])
 
         threading.Thread(target=run).start()
 
@@ -134,10 +114,26 @@ document.getElementById("result").innerText=d.status
         self.frontend_run(frontend)
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global brahma, prompt
 
+    print("🕉️ BRAHMA AI VERSION 44 FINAL ASCENSION ACTIVE")
     brahma = ब्रह्मसर्वोच्चनिर्माता()
 
     prompt = input("PROMPT: ")
 
     brahma.निर्माण(prompt)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

@@ -3,7 +3,10 @@
 # Universal Prompt Loader
 
 import os
-import requests
+import urllib.error
+import urllib.request
+
+MAX_PROMPT_BYTES = 1_000_000
 
 class ब्रह्मप्रॉम्प्टलोडर:
 
@@ -41,22 +44,28 @@ class ब्रह्मप्रॉम्प्टलोडर:
         return self.अंतिम_प्रॉम्प्ट
 
 
-    # url load
+    # url load (standard library only: no `requests` dependency)
     def यूआरएल_लोड(self, यूआरएल):
+
+        if not isinstance(यूआरएल, str) or not यूआरएल.startswith(("http://", "https://")):
+
+            raise ValueError("केवल http/https यूआरएल समर्थित है")
 
         try:
 
-            response = requests.get(यूआरएल, timeout=10)
+            with urllib.request.urlopen(यूआरएल, timeout=10) as response:
 
-            response.raise_for_status()
+                कच्चा = response.read(MAX_PROMPT_BYTES)
 
-            self.अंतिम_प्रॉम्प्ट = response.text.strip()
+                एन्कोडिंग = response.headers.get_content_charset() or "utf-8"
+
+            self.अंतिम_प्रॉम्प्ट = कच्चा.decode(एन्कोडिंग, "replace").strip()
 
             print("प्रॉम्प्ट यूआरएल लोड सफल")
 
             return self.अंतिम_प्रॉम्प्ट
 
-        except Exception as e:
+        except (urllib.error.URLError, OSError, ValueError) as e:
 
             raise RuntimeError(f"यूआरएल लोड विफल: {e}")
 

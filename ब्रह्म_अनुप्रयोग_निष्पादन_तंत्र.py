@@ -1,7 +1,6 @@
 # 🕉️ ब्रह्म अनुप्रयोग निष्पादन तंत्र
 # VERSION 16
 
-print("🕉️ ब्रह्म अनुप्रयोग निष्पादन तंत्र सक्रिय")
 
 import os
 import shutil
@@ -67,9 +66,13 @@ class ब्रह्मअनुप्रयोगनिष्पादनत�
         self.executor.कार्यक्रम_चलाओ(path)
 
 
-# TEST
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("🕉️ ब्रह्म अनुप्रयोग निष्पादन तंत्र सक्रिय")
     system = ब्रह्मअनुप्रयोगनिष्पादनतंत्र()
 
     test_app = os.path.expanduser("~/सूत्र-तंत्र/test_app.अनुप्रयोग")
@@ -90,3 +93,7 @@ if __name__ == "__main__":
     system.सूची()
 
     system.निष्पादन("test_app.अनुप्रयोग")
+
+
+if __name__ == "__main__":
+    _main()

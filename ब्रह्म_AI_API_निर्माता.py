@@ -2,8 +2,6 @@
 
 import os
 
-print("🕉️ ब्रह्म AI API निर्माता VERSION 21 सक्रिय")
-
 
 class ब्रह्मAPIनिर्माता:
 
@@ -60,10 +58,30 @@ with socketserver.TCPServer(("", PORT), Handler) as httpd:
         return file
 
 
-# run
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global engine, name
 
-engine = ब्रह्मAPIनिर्माता()
+    print("🕉️ ब्रह्म AI API निर्माता VERSION 21 सक्रिय")
 
-name = input("API नाम लिखें: ")
 
-engine.निर्मित(name)
+    # run
+
+    engine = ब्रह्मAPIनिर्माता()
+
+    name = input("API नाम लिखें: ")
+
+    engine.निर्मित(name)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

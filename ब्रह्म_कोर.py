@@ -1,6 +1,5 @@
 # 🕉️ BRAHMA TRUE AI ENGINE — VERSION 1 CORE
 
-print("🕉️ ब्रह्म सत्य कृत्रिमबुद्धि कोर प्रारम्भ")
 
 # ============================================
 # ब्रह्म कोर वर्ग
@@ -66,14 +65,25 @@ class ब्रह्मकोर:
             print("•", नाम, ":", self.मॉड्यूल[नाम])
 
 
-# ============================================
-# परीक्षण
-# ============================================
-
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global कोर
+    print("🕉️ ब्रह्म सत्य कृत्रिमबुद्धि कोर प्रारम्भ")
     कोर = ब्रह्मकोर()
 
     कोर.प्रारम्भ()
 
     कोर.स्थिति_दर्शय()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

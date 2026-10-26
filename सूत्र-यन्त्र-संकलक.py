@@ -1,86 +1,42 @@
-# =========================================
-# सूत्र स्वदेशी यन्त्र-कोड संकलक
-# =========================================
+"""🕉️ सूत्र यन्त्र-कोड संकलक.
 
-import struct
+Historically this module wrote ``struct.pack("B B I")`` records — a third
+incompatible layout (opcodes 1-5 with a different meaning for 5).  It now
+assembles to the format documented in :mod:`brahma_bytecode`, so the bytecode it
+produces runs on :class:`सूत्र_यन्त्र_निष्पादक.यन्त्रनिष्पादक`.
 
+Its old mnemonics are still accepted by the assembler.
+"""
 
-print("🕉️ सूत्र यन्त्र संकलक सक्रिय")
+from __future__ import annotations
 
+import brahma_bytecode
 
-opcode = {
-
-    "स्थापय": 1,
-    "योग": 2,
-    "घटा": 3,
-    "गुण": 4,
-    "दर्शय": 5
-
-}
-
-
-register_map = {
-
-    "अ": 1,
-    "ब": 2,
-    "स": 3,
-    "द": 4
-
-}
+opcode = dict(brahma_bytecode.OPCODES)
+register_map = dict(brahma_bytecode.REGISTERS)
 
 
 def संकलन(इनपुट, आउटपुट):
-
-    with open(इनपुट, "r", encoding="utf-8") as f:
-
-        पंक्तियाँ = f.readlines()
-
-
-    with open(आउटपुट, "wb") as f:
-
-        for पंक्ति in पंक्तियाँ:
-
-            भाग = पंक्ति.strip().split()
-
-            if len(भाग) == 0:
-                continue
-
-
-            आदेश = भाग[0]
-
-            op = opcode.get(आदेश, 0)
-
-
-            if आदेश == "स्थापय":
-
-                reg = register_map.get(भाग[1], 0)
-
-                val = int(भाग[2])
-
-                f.write(struct.pack("B B I", op, reg, val))
-
-
-            elif आदेश in ["योग", "घटा", "गुण"]:
-
-                reg1 = register_map.get(भाग[1], 0)
-
-                reg2 = register_map.get(भाग[2], 0)
-
-                f.write(struct.pack("B B B", op, reg1, reg2))
-
-
-            elif आदेश == "दर्शय":
-
-                reg = register_map.get(भाग[1], 0)
-
-                f.write(struct.pack("B B", op, reg))
-
-
+    """Assemble ``इनपुट`` into ``आउटपुट``; return the bytecode."""
+    code = brahma_bytecode.assemble_file(इनपुट, आउटपुट)
     print("संकलन पूर्ण:", आउटपुट)
+    return code
 
 
-इनपुट = input("सूत्र संचिका: ")
+def main(argv=None):
+    """CLI: ``python सूत्र-यन्त्र-संकलक.py इनपुट.सूत्र आउटपुट.यन्त्र``."""
+    import argparse
 
-आउटपुट = input("यन्त्र संचिका: ")
+    parser = argparse.ArgumentParser(description="सूत्र यन्त्र कोड संकलक")
+    parser.add_argument("input", nargs="?", help="सूत्र संचिका")
+    parser.add_argument("output", nargs="?", help="यन्त्र संचिका")
+    args = parser.parse_args(argv)
+    if not args.input or not args.output:
+        parser.print_usage()
+        return 2
+    संकलन(args.input, args.output)
+    return 0
 
-संकलन(इनपुट, आउटपुट)
+
+if __name__ == "__main__":
+    raise SystemExit(main())
