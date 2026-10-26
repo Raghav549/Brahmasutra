@@ -42,7 +42,9 @@ jobs:
 
   test:
     name: Test (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    # ubuntu-22.04 is used because the setup-python manifest for
+    # ubuntu-24.04 no longer ships every Python 3.9 patch release.
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
