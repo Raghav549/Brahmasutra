@@ -716,3 +716,170 @@ class TestStringInterpolation:
             "दर्शय अभिवादन(\"ब्रह्म\")\n"
         )
         assert out(source) == ["नमस्ते ब्रह्म"]
+
+
+class TestRaiseAndFinally:
+    """``उठाओ`` and ``अन्ततः`` — the other half of exception handling (3.2)."""
+
+    def test_raise_is_caught_with_its_message(self):
+        source = (
+            "प्रयास\n"
+            "    उठाओ \"स्वयं उठाया\"\n"
+            "पकड़ त\n"
+            "    दर्शय त\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["स्वयं उठाया"]
+
+    def test_raise_takes_an_expression(self):
+        source = (
+            "n = -2\n"
+            "प्रयास\n"
+            "    उठाओ $\"ऋणात्मक: {n}\"\n"
+            "पकड़ त\n"
+            "    दर्शय त\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["ऋणात्मक: -2"]
+
+    def test_uncaught_raise_reports_a_fault(self):
+        error = error_of("उठाओ \"अकेला\"\n")
+        assert error.message == "अकेला"
+        assert error.line == 1
+
+    def test_raise_without_a_value_uses_a_default_message(self):
+        assert out("प्रयास\n    उठाओ\nपकड़ त\n    दर्शय त\nअन्त\n") == ["उठाया गया अपवाद"]
+
+    def test_finally_runs_on_normal_completion(self):
+        assert out("प्रयास\n    दर्शय \"निकाय\"\nअन्ततः\n    दर्शय \"अन्ततः\"\nअन्त\n") == \
+            ["निकाय", "अन्ततः"]
+
+    def test_finally_runs_before_the_handler_returns(self):
+        source = (
+            "कार्य f()\n"
+            "    प्रयास\n"
+            "        उठाओ \"x\"\n"
+            "    पकड़ त\n"
+            "        प्रत्यागमन \"पकड़ा\"\n"
+            "    अन्ततः\n"
+            "        दर्शय \"सफाई\"\n"
+            "    अन्त\n"
+            "अन्त\n"
+            "दर्शय f()\n"
+        )
+        assert out(source) == ["सफाई", "पकड़ा"]
+
+    def test_finally_runs_when_the_guard_returns(self):
+        source = (
+            "कार्य f()\n"
+            "    प्रयास\n"
+            "        प्रत्यागमन \"मान\"\n"
+            "    अन्ततः\n"
+            "        दर्शय \"सफाई\"\n"
+            "    अन्त\n"
+            "अन्त\n"
+            "दर्शय f()\n"
+        )
+        assert out(source) == ["सफाई", "मान"]
+
+    def test_finally_runs_on_break_and_continue(self):
+        source = (
+            "i = 0\n"
+            "यावत् i < 3\n"
+            "    प्रयास\n"
+            "        i = i + 1\n"
+            "        यदि i == 2\n"
+            "            चल\n"
+            "        अन्त\n"
+            "        यदि i == 3\n"
+            "            विराम\n"
+            "        अन्त\n"
+            "    अन्ततः\n"
+            "        दर्शय $\"अन्ततः {i}\"\n"
+            "    अन्त\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["अन्ततः 1", "अन्ततः 2", "अन्ततः 3"]
+
+    def test_try_without_catch_runs_finally_and_re_raises(self):
+        source = "प्रयास\n    उठाओ \"फिर से\"\nअन्ततः\n    दर्शय \"सफाई\"\nअन्त\n"
+        error = error_of(source)
+        assert error.message == "फिर से"
+
+    def test_reraise_from_a_handler_reaches_the_outer_block(self):
+        source = (
+            "प्रयास\n"
+            "    प्रयास\n"
+            "        उठाओ \"भीतरी\"\n"
+            "    पकड़ त\n"
+            "        उठाओ \"पुनः: \" + त\n"
+            "    अन्ततः\n"
+            "        दर्शय \"भीतरी अन्ततः\"\n"
+            "    अन्त\n"
+            "पकड़ बाहरी\n"
+            "    दर्शय बाहरी\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["भीतरी अन्ततः", "पुनः: भीतरी"]
+
+    def test_finally_runs_once_when_the_handler_itself_raises(self):
+        source = (
+            "प्रयास\n"
+            "    प्रयास\n"
+            "        उठाओ \"पहला\"\n"
+            "    पकड़ त\n"
+            "        उठाओ \"दूसरा\"\n"
+            "    अन्ततः\n"
+            "        दर्शय \"सफाई\"\n"
+            "    अन्त\n"
+            "पकड़ बाहरी\n"
+            "    दर्शय बाहरी\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["सफाई", "दूसरा"]
+
+    def test_try_needs_catch_or_finally(self):
+        error = error_of("प्रयास\n    दर्शय 1\nअन्त\n")
+        assert "पकड़" in error.message or "अन्ततः" in error.message
+
+
+class TestSliceAssignment:
+    """``x[a:b] = [...]`` — the last missing lvalue form (3.2)."""
+
+    def test_replaces_a_range(self):
+        assert out("स = [1, 2, 3, 4]\nस[1:3] = [9, 9]\nदर्शय स") == ["[1, 9, 9, 4]"]
+
+    def test_can_change_the_length(self):
+        assert out("स = [1, 2, 3]\nस[1:2] = [7, 8, 9]\nदर्शय स") == ["[1, 7, 8, 9, 3]"]
+
+    def test_inserts_with_an_empty_slice(self):
+        assert out("स = [1, 2]\nस[1:1] = [5]\nदर्शय स") == ["[1, 5, 2]"]
+
+    def test_deletes_with_an_empty_replacement(self):
+        assert out("स = [1, 2, 3, 4]\nस[1:3] = []\nदर्शय स") == ["[1, 4]"]
+
+    def test_negative_and_open_bounds(self):
+        assert out("स = [1, 2, 3]\nस[-1:] = [9, 8]\nदर्शय स") == ["[1, 2, 9, 8]"]
+        assert out("स = [1, 2, 3]\nस[:1] = [0]\nदर्शय स") == ["[0, 2, 3]"]
+
+    def test_requires_a_list_replacement(self):
+        error = error_of("स = [1, 2]\nस[0:1] = 5\n")
+        assert "सूची" in error.message
+
+    def test_strings_are_immutable(self):
+        error = error_of('श = "ब्रह्म"\nश[0:1] = ["ब"]\n')
+        assert "सूची" in error.message or "अपरिवर्तनीय" in error.message
+
+    def test_non_integer_bounds_are_rejected(self):
+        error = error_of('स = [1, 2]\nस[0:\"अ\"] = [1]\n')
+        assert "पूर्णांक" in error.message
+
+    def test_bytecode_round_trip(self, tmp_path):
+        from brahma import compile_source, dump_bytecode, load_bytecode
+        from brahma.vm import VM
+
+        path = str(tmp_path / "slice.sbc")
+        dump_bytecode(compile_source("स = [1, 2, 3]\nस[1:] = [7]\nदर्शय स\n"), path)
+        lines = []
+        VM(out=lines.append).run(load_bytecode(path))
+        assert lines == ["[1, 7]"]

@@ -83,6 +83,8 @@ class Frame:
     enclosing: List[Dict[str, Any]] = field(default_factory=list)
     #: Active ``प्रयास`` guards as ``(handler_ip, stack_depth, name)``.
     handlers: List[Any] = field(default_factory=list)
+    #: The fault currently being handled here, for ``RERAISE``.
+    pending: Optional[RuntimeFault] = None
 
     @property
     def name(self) -> str:
@@ -516,7 +518,9 @@ class VM:
             if frame.handlers:
                 target, depth, name = frame.handlers.pop()
                 del frame.stack[depth:]
-                frame.locals[name] = fault.message
+                frame.pending = fault
+                if name:
+                    frame.locals[name] = fault.message
                 frame.ip = target
                 return True
             self.frames.pop()
@@ -595,6 +599,13 @@ class VM:
                 target = self._pop(frame, instruction)
                 frame.stack.append(self._index(target, index, instruction))
 
+            elif op == "STORE_SLICE":
+                value = self._pop(frame, instruction)
+                stop = self._pop(frame, instruction)
+                start = self._pop(frame, instruction)
+                target = self._pop(frame, instruction)
+                self._store_slice(target, start, stop, value, instruction)
+
             elif op == "STORE_INDEX":
                 value = self._pop(frame, instruction)
                 index = self._pop(frame, instruction)
@@ -628,6 +639,18 @@ class VM:
 
             elif op == "CALL":
                 self._call(frame, instruction)
+
+            elif op == "RAISE":
+                message = self._pop(frame, instruction)
+                raise RuntimeFault(str(message), line=instruction.line)
+
+            elif op == "RERAISE":
+                pending = frame.pending
+                if pending is None:  # pragma: no cover - compiler guarantees this
+                    raise RuntimeFault(
+                        "पुनः-उठाने के लिए कोई अपवाद नहीं", line=instruction.line
+                    )
+                raise pending
 
             elif op == "MAKE_FUNCTION":
                 frame.stack.append(
@@ -836,12 +859,35 @@ class VM:
     def _slice(target: Any, start: Any, stop: Any, instruction: Instruction) -> Any:
         if not isinstance(target, (str, list)):
             raise RuntimeFault("काट केवल शब्द/सूची पर लागू है", line=instruction.line)
+        VM._bounds(start, stop, instruction)
+        return target[start:stop]
+
+    @staticmethod
+    def _bounds(start: Any, stop: Any, instruction: Instruction) -> None:
         for bound, name in ((start, "आरम्भ"), (stop, "अन्त")):
             if bound is None:
                 continue
             if isinstance(bound, bool) or not isinstance(bound, int):
-                raise RuntimeFault("काट का %s पूर्णांक होना चाहिए" % name, line=instruction.line)
-        return target[start:stop]
+                raise RuntimeFault(
+                    "काट का %s पूर्णांक होना चाहिए" % name, line=instruction.line
+                )
+
+    @classmethod
+    def _store_slice(cls, target: Any, start: Any, stop: Any, value: Any,
+                     instruction: Instruction) -> None:
+        """``x[a:b] = value`` — lists only; the replacement may change length."""
+        if not isinstance(target, list):
+            raise RuntimeFault(
+                "काट-लेखन केवल सूची पर लागू है (शब्द अपरिवर्तनीय हैं)",
+                line=instruction.line,
+            )
+        if not isinstance(value, list):
+            raise RuntimeFault(
+                "काट-लेखन में सूची चाहिए, मिला %s" % type(value).__name__,
+                line=instruction.line,
+            )
+        cls._bounds(start, stop, instruction)
+        target[start:stop] = value
 
     @staticmethod
     def _index(target: Any, index: Any, instruction: Instruction) -> Any:

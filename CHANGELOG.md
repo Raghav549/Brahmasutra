@@ -4,6 +4,36 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.2.0] — 2026-10-27
+
+### Added
+
+* **`उठाओ` / `raise`.** Raise a fault carrying any expression as its message
+  (default message when the value is omitted).  Opcode `RAISE`.
+* **`अन्ततः` / `finally`.** A cleanup block that runs on *every* exit from the
+  guard: normal completion, a caught fault, an uncaught fault (which then keeps
+  propagating, via the new `RERAISE` opcode and a per-frame `pending` fault),
+  and every `प्रत्यागमन`/`विराम`/`चल` inside it.  The compiler inlines the block
+  along each exit path and tracks a stack of active cleanups, so the block runs
+  exactly once however control leaves.  `प्रयास` now needs at least one of
+  `पकड़`/`अन्ततः`.
+* **Slice assignment.** `स[1:3] = [9, 9]` — replaces a list slice, and because
+  the replacement may differ in length it also inserts (`a == b`) and deletes
+  (`[]`).  Opcode `STORE_SLICE`; strings stay immutable and are rejected with a
+  clear message.
+* 21 new tests (raise/finally 13, slice assignment 8) — **529** total.
+
+### Changed
+
+* The kernel's guarded syscall now uses `उठाओ $"अज्ञात syscall {क्रमांक}"`
+  instead of faking a division by zero, so the OS raises its own typed message;
+  boot is 1 865 steps / 122 044 bytes and the report shows
+  `अपवाद: 1 पकड़े (अज्ञात syscall 99)`.
+* `docs/LANGUAGE.md` §2, §5, §7, §8.1, §10 updated for 3.2.0; slice assignment
+  and the missing `finally` are no longer limitations, and the remaining ones
+  (no exception *types*, no `nonlocal`) are stated precisely.
+* `_slice` and `_store_slice` now share one bounds validator.
+
 ## [3.1.0] — 2026-10-27
 
 ### Added

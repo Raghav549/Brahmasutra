@@ -39,7 +39,7 @@ from .vm import VM, Frame, run_code
 from .bytecode import CodeObject, Instruction, OPCODES, dump_bytecode, load_bytecode
 from .api import ExecutionResult, execute, run_file, run_source, disassemble
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"
 __all__ = [
     "__version__",
     "BrahmaError",

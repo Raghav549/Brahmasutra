@@ -213,10 +213,10 @@ $ brahma llm kernel verify
 आह्वान: 3
 सञ्चिकाएँ: /इत्यादि/संस्करण, /इत्यादि/स्वागत
 व्यवधान: 3 (अंतिम: चक्रिका)
-अपवाद: 1 पकड़े (syscall 99: शून्य से भाग दिया गया)
+अपवाद: 1 पकड़े (अज्ञात syscall 99)
 कर्नेल API: 10 फलन
 READY
-  चरण: 1872, छवि: 122928 बाइट, स्थिति: ठीक
+  चरण: 1865, छवि: 122044 बाइट, स्थिति: ठीक
 ```
 
 The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of ten callable
@@ -225,7 +225,7 @@ API *to programs*, not just a boot banner.  The language had to grow for this:
 dictionaries, slicing, nested index assignment, multi-line bracketed literals
 and — since 3.1 — closures, `प्रयास`/`पकड़` and `$"…{…}…"` interpolation (see
 `docs/LANGUAGE.md`), all added with tests.  The kernel uses the exception
-support itself: `सुरक्षित_आह्वान` turns an unknown syscall into a caught fault
+support itself: `सुरक्षित_आह्वान` turns an unknown syscall into a raised, caught fault
 and records it.
 
 The shell in `kernel/kernel_engine.py` is a real userland for it — `boot`,
@@ -521,7 +521,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-508 passed in 30.0 s
+529 passed in 30.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural

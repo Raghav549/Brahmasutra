@@ -49,6 +49,10 @@ KEYWORDS: Dict[str, str] = {
     "try": "TRY",
     "पकड़": "CATCH",
     "catch": "CATCH",
+    "अन्ततः": "FINALLY",
+    "finally": "FINALLY",
+    "उठाओ": "RAISE",
+    "raise": "RAISE",
     # binding
     "स्थापय": "LET",
     "let": "LET",
