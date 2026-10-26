@@ -40,9 +40,6 @@ dev = ["pytest>=7", "flake8>=5", "build>=1"]
 
 [tool.setuptools]
 packages = ["brahma", "brahma_llm"]
-
-[tool.setuptools.package-data]
-brahma = ["lib/*.सूत्र", "lib/*.sutra"]
 # Support modules that ship with the engine: the dependency-free web stack,
 # the demo backends, the code generators and the shared CLI/path helpers.
 py-modules = [
@@ -56,6 +53,9 @@ py-modules = [
     "brahma_templates",
     "brahma_web",
 ]
+
+[tool.setuptools.package-data]
+brahma = ["lib/*.सूत्र", "lib/*.sutra"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
