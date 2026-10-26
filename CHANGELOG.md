@@ -4,6 +4,67 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0] — 2026-10-27
+
+**"ब्रह्म-LLM is the application" release.**  The app builder is gone.  ब्रह्म
+answers chat, writes सूत्र code, executes it, explains it and renders images on
+one dependency-free server; the सूत्र-OS kernel is a complete six-subsystem
+program; the language gained dictionaries, slicing and 26 builtins.
+
+### Added
+
+* **`brahma_llm/agent.py`** — `BrahmaAgent` with real capabilities, routed by
+  intent: `chat`, `code` (candidates are **ranked by the model's own loss**, then
+  compiled and executed), `run`, `explain` (structural, deterministic), `image`,
+  `status`, `help`.  Every reply carries a trace of what executed.
+* **`brahma_llm/server.py`** — `brahma llm serve`: `/`, `/status`, `/kernel`,
+  `/chat`, `/generate`, `/run`, `/explain`, `/image`, optional `/train`.
+* **`brahma llm ask` / `chat` / `image` / `serve`** — the same agent from the CLI.
+* **`brahma_llm/image.py`** — real PNGs from the model's own सूत्र program plus
+  its next-token distribution (zlib/struct only; procedural, and labelled so).
+* **सूत्र-OS rewritten** (`brahma_llm/os_kernel.py`): memory allocator, process
+  table, round-robin scheduler, syscall table, in-memory filesystem and
+  interrupt handling — 5/5 self-tests, 1 723 steps, a nine-function kernel API
+  dictionary, booted and verified on the project's VM.
+* **`mission` now ends by serving itself**: the trained model is started on a
+  real port and `/status`, `/kernel`, `/chat`, `/run` and `/image` are
+  smoke-tested (`smoke_ok`).  `--resume`, `--continuous`,
+  `--target-perplexity` and `--max-generations` make it a loop.
+* **Language**: dict literals/indexing/nested assignment, slices `x[a:b]`,
+  multi-line literals inside brackets, and new builtins — `विभाजन`,
+  `प्रतिस्थापन`, `त्रिम`, `बड़े`, `छोटे`, `खोज`, `दोहराओ`, `क्रम`, `उलटा`,
+  `हटाओ`, `सम्मिलित`, `विस्तार`, `गिनती`, `स्थान`, `योगफल`, `सूची`, `कुंजियाँ`,
+  `मान`, `समाविष्ट`, `हटाओ_कुंजी`, `तालिका`, `वर्गमूल`, `प्रकार`, `गोल`,
+  `मिलाओ`.
+* **Scale presets** `xlarge` (314 240), `huge` (886 272) and `brahma`
+  (**2 411 008** parameters, instantiated and counted).  Measured 1-epoch runs:
+  `large` 115 287 params in 21.7 s; `xlarge` 254 919 in 50.3 s; `huge` 558 903
+  — with *worse* perplexity, which is the honest result without more data.
+* 23 new tests (agent, image, HTTP surface, resume/continuous, tables/slices/builtins) — **483**.
+
+### Changed
+
+* `brahma_llm/app_builder.py` **removed**; `कृत्रिमबुद्धि/सूत्र_अनुप्रयोग_निर्माता.py`
+  now drives the agent and points at `brahma llm serve`.
+* `brahma_chat` `/llm` also returns the last mission summary; `brahma llm info`
+  prints it.
+* Header values that are not latin-1 are escaped in `brahma_web` instead of
+  killing the request (found by serving Devanagari origin tags).
+
+### Removed
+
+* The 16 committed `सर्वनिर्माण_v12…v27` output trees, the duplicated `release/`
+  copy, and five truncated `*.py.` / `*.py.y` files (109 files).  Gates after
+  removal: legacy baseline 51/51, demo sweep 221 scripts / 0 failures.
+
+### Honest scope
+
+The largest model here is 2.41 M parameters (instantiated) / 558 903 (trained one
+epoch).  This is not the largest or most powerful LLM in existence and the docs
+say so; what is claimed is that the entire chain — सूत्र language → VM →
+bytecode → kernel → trainer → self-editor → agent → HTTP → PNG — is implemented
+here, from scratch, and runs.
+
 ## [2.1.0] — 2026-10-26
 
 ### Added

@@ -419,3 +419,78 @@ class TestLimits:
         assert "बाहरी" in names
         assert "आन्तरिक" in names
         assert "आन्तरिक" in fault.traceback_text()
+
+
+class TestTablesAndSlices:
+    """Dictionaries, slicing and the extended standard library (2.x → 3.0)."""
+
+    def test_dict_literal_and_indexing(self):
+        result = execute('स्थापय त = {"नाम": "ब्रह्म", "संख्या": 3}\nदर्शय त["नाम"]\nदर्शय त["संख्या"]')
+        assert result.output == ["ब्रह्म", "3"]
+
+    def test_dict_assignment_and_nested_update(self):
+        source = (
+            'स्थापय त = {"सूची": [1, 2]}\n'
+            'त["सूची"][1] = 9\n'
+            'त["नया"] = 4\n'
+            'दर्शय त["सूची"][1] + त["नया"]'
+        )
+        assert execute(source).output == ["13"]
+
+    def test_missing_key_is_a_runtime_fault(self):
+        fault = error_of('स्थापय त = {}\nदर्शय त["नहीं"]')
+        assert "कुंजी" in str(fault)
+
+    def test_slices_on_lists_and_strings(self):
+        source = (
+            "स्थापय स = [10, 20, 30, 40]\n"
+            "दर्शय स[1:3]\nदर्शय स[:2]\nदर्शय स[2:]\n"
+            'दर्शय "सूत्र"[1:3]'
+        )
+        assert execute(source).output == ["[20, 30]", "[10, 20]", "[30, 40]", "ूत"]
+
+    def test_dict_and_list_builtins(self):
+        source = (
+            'स्थापय त = तालिका()\n'
+            'त["क"] = 1\nत["ख"] = 2\n'
+            "दर्शय कुंजियाँ(त)\n"
+            'दर्शय समाविष्ट(त, "क")\n'
+            'दर्शय हटाओ_कुंजी(त, "क")\n'
+            "दर्शय योगफल([1, 2, 3])\n"
+            "दर्शय क्रम([3, 1, 2])\n"
+            "दर्शय उलटा([1, 2, 3])\n"
+            "दर्शय गिनती([1, 1, 2], 1)\n"
+            "दर्शय हटाओ([1, 2, 3])\n"
+            "दर्शय सम्मिलित([1, 3], 1, 2)\n"
+            "दर्शय विस्तार([1], [2, 3])"
+        )
+        assert execute(source).output == [
+            "[क, ख]", "सत्य", "1", "6", "[1, 2, 3]", "[3, 2, 1]", "2", "3",
+            "[1, 2, 3]", "[1, 2, 3]",
+        ]
+
+    def test_string_builtins(self):
+        source = (
+            'दर्शय विभाजन("a,b,c", ",")\n'
+            'दर्शय प्रतिस्थापन("सूत्र-OS", "-", " ")\n'
+            'दर्शय त्रिम("  ॐ  ")\n'
+            'दर्शय बड़े("om")\n'
+            'दर्शय खोज("सूत्र", "त्")\n'
+            'दर्शय दोहराओ("ॐ", 3)'
+        )
+        assert execute(source).output == ["[a, b, c]", "सूत्र OS", "ॐ", "OM", "2", "ॐॐॐ"]
+
+    def test_program_may_span_lines_inside_brackets(self):
+        source = (
+            'स्थापय त = {\n  "क": 1,\n  "ख": 2\n}\n'
+            "दर्शय योगफल(मान(त))\n"
+            "स्थापय स = [\n 10,\n 20\n]\nदर्शय स[1]"
+        )
+        assert execute(source).output == ["3", "20"]
+
+    def test_type_builtin_reports_real_types(self):
+        source = (
+            'दर्शय प्रकार(1) + "/" + प्रकार(1.5) + "/" + प्रकार("x") + "/" '
+            '+ प्रकार([1]) + "/" + प्रकार({}) + "/" + प्रकार(सत्य)'
+        )
+        assert execute(source).output == ["पूर्णांक/दशमलव/शब्द/सूची/तालिका/बूलियन"]

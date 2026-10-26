@@ -226,7 +226,15 @@ class App:
                 self.send_header("Content-Length", str(len(body)))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 for key, value in response.headers.items():
-                    self.send_header(key, value)
+                    # HTTP header values are latin-1, but a handler may want to
+                    # report a Devanagari value (e.g. an origin tag).  Escape
+                    # anything outside latin-1 instead of killing the request.
+                    safe = str(value)
+                    try:
+                        safe.encode("latin-1")
+                    except UnicodeEncodeError:
+                        safe = safe.encode("unicode_escape").decode("ascii")
+                    self.send_header(key, safe)
                 self.end_headers()
                 if body:
                     self.wfile.write(body)

@@ -78,9 +78,15 @@ jobs:
           python -m brahma llm generate "दर्शय" --tokens 8
           python -m brahma llm autotrain --target "अभाज्य संख्या" --iterations 2 --epochs 2 --json > /tmp/autotrain.json
           python -c "import json; d=json.load(open('/tmp/autotrain.json')); assert d['programs']['accepted'] >= 1 and d['kernel']['ok'], d"
-          python -m brahma llm build-app --target "योग अनुप्रयोग" --out /tmp/ci-app
+          python -m brahma llm ask "दर्शय 6 * 7" --json > /tmp/ask.json
+          python -c "import json; d=json.load(open('/tmp/ask.json')); assert d['intent'] == 'run' and d['output'] == ['42'], d"
+          python -m brahma llm ask "कोड लिखो: अभाज्य संख्या जाँच" --json > /tmp/code.json
+          python -c "import json; d=json.load(open('/tmp/code.json')); assert d['origin'] == 'ranked' and d['output'], d"
+          python -m brahma llm image "शांति" --out /tmp/ci.png
+          python -c "assert open('/tmp/ci.png','rb').read(4) == b'\x89PNG'"
+          python -m brahma llm serve --port 0 --once --image-dir /tmp/ci-chitra
           python -m brahma llm mission --target "अभाज्य संख्या जाँच" --iterations 1 --epochs 1 --size tiny --json > /tmp/mission.json
-          python -c "import json; d=json.load(open('/tmp/mission.json')); assert d['kernel_verified'] and d['training']['programs']['accepted'] >= 1, d; assert d['os']['attempted'] and d['app']['smoke_ok'], d"
+          python -c "import json; d=json.load(open('/tmp/mission.json')); assert d['kernel_verified'] and d['training']['programs']['accepted'] >= 1, d; assert d['os']['attempted'] and d['server']['smoke_ok'], d"
 
   legacy-baseline:
     name: Legacy baseline freshness
@@ -124,6 +130,9 @@ jobs:
           /tmp/venv/bin/brahma run examples/नमस्ते.sutra
           cd /tmp && BRAHMA_HOME=/tmp/brahma-wheel /tmp/venv/bin/brahma llm info --json | head -3
           BRAHMA_HOME=/tmp/brahma-wheel /tmp/venv/bin/brahma llm kernel verify
+          cd /tmp && /tmp/venv/bin/brahma llm ask "दर्शय 2 + 3"
+          /tmp/venv/bin/brahma llm image "ॐ" --out /tmp/wheel.png
+          /tmp/venv/bin/brahma llm serve --port 0 --once --image-dir /tmp/wheel-img
       - uses: actions/upload-artifact@v4
         with:
           name: brahma-lang-dist

@@ -1,6 +1,6 @@
 # BRAHMA भाषा संदर्भ (Language Reference)
 
-Version 2.1.0 (grammar unchanged since 1.2.0) — implemented by `brahma/` (lexer → parser → compiler → VM).
+Version 3.0.0 (grammar extended in 3.0.0: dicts, slices, multi-line literals) — implemented by `brahma/` (lexer → parser → compiler → VM).
 
 BRAHMA is a small, dynamically typed language whose native vocabulary is
 Sanskrit. Every keyword is available in Devanagari **and** in ASCII, so the
@@ -56,6 +56,19 @@ so `अ = 1; ब = 2` is two statements. Blank lines are ignored.
 
 ---
 
+A newline ends a statement, **except inside `( … )`, `[ … ]` or `{ … }`**, where
+it is a continuation. Multi-line table literals, list literals and call
+arguments are therefore ordinary code:
+
+```brahma
+स्थापय त = {
+    "नाम": "सूत्र-OS",
+    "संस्करण": 3
+}
+```
+
+---
+
 ## 2. Keywords
 
 | Sanskrit | ASCII | Meaning |
@@ -91,6 +104,7 @@ Blocks are **terminated by `अन्त`**, not indented. Indentation is cosmet
 | string | `"नमस्ते"`, `""` | false when empty |
 | boolean | `सत्य`, `असत्य` | as-is |
 | list | `[1, 2, 3]` | false when empty |
+| table (dict) | `{"क": 1}` | false when empty |
 | null | `शून्य` | always false |
 
 Equality is **type-strict** for booleans: `सत्य == 1` is `असत्य`. Integers and
@@ -112,8 +126,8 @@ floats compare numerically: `1 == 1.0` is `सत्य`.
 | 6 | `*` `/` `%` | left |
 | 7 | `न`/`not`, unary `-`, unary `+` | right |
 | 8 | `**` | right |
-| 9 | `f(args)`, `x[i]` | left |
-| 10 | literals, names, `( … )`, `[…]` | — |
+| 9 | `f(args)`, `x[i]`, `x[a:b]` | left |
+| 10 | literals, names, `( … )`, `[…]`, `{…}` | — |
 
 `-2 ** 2` is `-4` (power binds tighter than unary minus), `2 ** 3 ** 2` is `512`.
 
@@ -127,14 +141,22 @@ floats compare numerically: `1 == 1.0` is `सत्य`.
   `0 च 5` → `0`, `2 च 5` → `5`.
 * Mixing types in arithmetic or ordered comparison is a runtime error with a
   precise diagnostic — there is no silent coercion.
+* `x[a:b]` slices a string or a list; either bound may be omitted (`x[:3]`,
+  `x[2:]`), negative bounds count from the end, and a non-integer bound is a
+  runtime error.
+* `{कुंजी: मान, …}` builds a table. Keys must be immutable (string, number,
+  boolean, `शून्य`); a missing key on read is a runtime error naming the key,
+  and assigning `त["नयी"] = मान` inserts it.
 
 ### 4.3 Assignment
 
 ```brahma
-अ = 1            # simple
-अ += 2           # compound: += -= *= /= %=
-स[0] = 9         # list element
-स्थापय ख = 3     # explicit declaration (informational)
+अ = 1                    # simple
+अ += 2                   # compound: += -= *= /= %=
+स[0] = 9                 # list element
+त["नाम"] = "ब्रह्म"      # table entry (inserts when missing)
+ग[1][0] = 30             # nested element (chains of `[…]` on the left)
+स्थापय ख = 3             # explicit declaration (informational)
 ```
 
 Inside a function, assignment always creates/updates a **local** variable.
@@ -197,6 +219,30 @@ Functions may read globals but cannot rebind them (there is no `global`).
 | `श्रेणी` | `range` | 1–3 | list of integers |
 | `जोड़ो` | `join` | 2 | join a list with a separator |
 | `जोड़ें` | `append` | 2 | append to a list, returns the list |
+| `विभाजन` | `split` | 1–2 | split a string (default: whitespace) |
+| `प्रतिस्थापन` | `replace` | 3 | replace every occurrence |
+| `त्रिम` | `trim`/`strip` | 1 | strip surrounding whitespace |
+| `बड़े` / `छोटे` | `upper`/`lower` | 1 | case conversion |
+| `खोज` | `find` | 2 | index of a substring, `-1` if absent |
+| `दोहराओ` | `repeat` | 2 | repeat a string *n* times |
+| `क्रम` | `sort` | 1 | new sorted list |
+| `उलटा` | `reverse` | 1 | new reversed list |
+| `हटाओ` | `pop` | 1–2 | remove and return an element |
+| `सम्मिलित` | `insert` | 3 | insert at an index, returns the list |
+| `विस्तार` | `extend` | 2 | append another list's items |
+| `गिनती` | `count` | 2 | occurrences of a value |
+| `स्थान` | `index_of` | 2 | index of a value (error if absent) |
+| `योगफल` | `sum` | 1 | sum of numbers |
+| `सूची` | `list` | 0–1 | new list from a list/string/table |
+| `कुंजियाँ` | `keys` | 1 | table keys |
+| `मान` | `values` | 1 | table values |
+| `समाविष्ट` | `has` | 2 | key membership |
+| `हटाओ_कुंजी` | `drop` | 2 | remove a key, returns its value |
+| `तालिका` | `dict` | 0 | new empty table |
+| `वर्गमूल` | `sqrt` | 1 | square root (errors on negatives) |
+| `प्रकार` | `type` | 1 | type name in Sanskrit |
+| `गोल` | `round` | 1 | nearest integer |
+| `मिलाओ` | `fuse` | 1 | concatenate rendered list items |
 
 Builtins check their argument count and raise a BRAHMA error (not a Python
 `TypeError`) on misuse.
@@ -225,7 +271,7 @@ Runtime guards:
 
 The step budget makes accidental hangs impossible, but it is **not** a security
 sandbox: BRAHMA programs cannot touch the filesystem or network at all, because
-no such builtins exist in 2.1.0.
+no such builtins exist in 3.0.0.
 
 ---
 
@@ -301,15 +347,15 @@ After `pip install brahma-lang`, the same commands are available as `brahma`.
 
 ---
 
-## 10. Known limitations (2.1.0)
+## 10. Known limitations (3.0.0)
 
 Honest list — these are not implemented:
 
-* no user-defined classes/objects, no dictionaries, no tuples or sets
+* no user-defined classes/objects, no tuples or sets
 * no `import` / module system: a program is a single file
-* no string interpolation or formatting functions
+* no string interpolation (`"$x"`); string building uses `+` and `पाठ()`
 * no language-level exceptions (`try`/`catch`)
-* no slicing (`x[1:3]`), only single indexing
+* no slice *assignment* (`x[1:3] = …`); element assignment and slicing reads work
 * no closures; functions see globals read-only
 * no tail-call optimisation, no JIT; the VM is a straightforward interpreter
 * the C VM in `native_vm/` is a **separate**, much smaller prototype and does

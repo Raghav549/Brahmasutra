@@ -49,6 +49,8 @@ OPCODES: Dict[str, int] = {
     "MAKE_FUNCTION": 17,
     "PRINT": 18,
     "HALT": 19,
+    "BUILD_DICT": 20,
+    "LOAD_SLICE": 21,
 }
 
 #: Ops whose ``arg`` is a jump target.
@@ -160,6 +162,9 @@ class CodeObject:
             elif instr.op == "BUILD_LIST":
                 if not isinstance(instr.arg, int) or instr.arg < 0:
                     raise BytecodeError("BUILD_LIST का आकार अमान्य", line=instr.line)
+            elif instr.op == "BUILD_DICT":
+                if not isinstance(instr.arg, int) or instr.arg < 0:
+                    raise BytecodeError("BUILD_DICT का आकार अमान्य", line=instr.line)
             elif instr.op == "BINARY" and instr.arg not in BINARY_OPS:
                 raise BytecodeError("अमान्य बाइनरी ऑपरेटर %r" % (instr.arg,), line=instr.line)
             elif instr.op == "UNARY" and instr.arg not in UNARY_OPS:

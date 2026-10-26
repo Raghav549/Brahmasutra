@@ -40,6 +40,12 @@ PRESETS: Dict[str, Dict[str, int]] = {
     "small": {"d_model": 16, "hidden": 64, "order": 3, "epochs": 8, "max_vocab": 160},
     "medium": {"d_model": 24, "hidden": 128, "order": 4, "epochs": 10, "max_vocab": 256},
     "large": {"d_model": 32, "hidden": 192, "order": 5, "epochs": 12, "max_vocab": 384},
+    # Beyond this point the cost is *interpreted Python*, not memory: every
+    # multiply-add is a CPython operation, so these presets are honest
+    # statements of scale, not claims of speed.  See docs/LLM.md §9.
+    "xlarge": {"d_model": 48, "hidden": 384, "order": 6, "epochs": 14, "max_vocab": 512},
+    "huge": {"d_model": 64, "hidden": 768, "order": 8, "epochs": 16, "max_vocab": 768},
+    "brahma": {"d_model": 96, "hidden": 1536, "order": 10, "epochs": 18, "max_vocab": 1024},
 }
 
 
@@ -563,6 +569,16 @@ class BrahmaLLM:
         else:
             self.model.fit(sequences, vocab_size=self.tokenizer.vocab_size)
         return self
+
+    def score(self, text: str) -> float:
+        """Cross-entropy of ``text`` under this model (lower = more natural).
+
+        Used as a *ranker*: several candidate सूत्र programs are generated, and
+        the one the model finds most likely wins.  That is the honest version of
+        "the model writes the code" at this model size — see docs/LLM.md §6.8.
+        """
+        report = self.evaluate([text])
+        return float(report["loss"])
 
     def evaluate(self, texts: Sequence[str]) -> Dict[str, float]:
         sequences = [self.tokenizer.encode(text, add_special=True) for text in texts]

@@ -38,6 +38,23 @@ class ListExpr(Node):
 
 
 @dataclass
+class DictExpr(Node):
+    """``{"कुंजी": मान, ...}`` — an ordered map literal."""
+
+    keys: List[Node] = field(default_factory=list)
+    values: List[Node] = field(default_factory=list)
+
+
+@dataclass
+class Slice(Node):
+    """``x[start:stop]`` with either bound optional."""
+
+    target: Optional[Node] = None
+    start: Optional[Node] = None
+    stop: Optional[Node] = None
+
+
+@dataclass
 class UnaryOp(Node):
     op: str = ""
     operand: Optional[Node] = None

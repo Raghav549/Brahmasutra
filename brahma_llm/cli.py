@@ -15,7 +15,8 @@ command                 what it actually does
 ``autotrain``           set a target and run the autonomous loop
 ``evolve``              one self-edit round (body growth / OS reinstall)
 ``kernel``              build, boot, verify or install the सूत्र-OS image
-``build-app``           generate a runnable app with the model
+``ask`` / ``chat``      the model answers: chat, code, run, explain, image
+``serve``              serve the model itself over HTTP (chat/code/image/kernel)
 ``sutra-math``          prove the model's maths on the सूत्र VM
 ``bench``               measured perplexity/speed table (no invented numbers)
 ======================  =====================================================
@@ -28,6 +29,10 @@ import json
 import os
 import sys
 from typing import Optional, Sequence
+
+
+#: Every size preset the model knows about, largest last.
+SIZES = ("tiny", "small", "medium", "large", "xlarge", "huge", "brahma")
 
 
 def _model_dir(path: Optional[str]) -> str:
@@ -61,6 +66,9 @@ def cmd_info(args: argparse.Namespace) -> int:
     kernel = verify()
     info["kernel"] = {"ok": kernel["ok"], "steps": kernel["steps"], "image_bytes": kernel["image_bytes"]}
     info["corpus"] = {"sutra_files": len(sutra_files()), "texts": len(load_corpus(include_docs=False))}
+    from .mission import last_mission
+
+    info["mission"] = last_mission()
     if args.json:
         print(json.dumps(info, ensure_ascii=False, indent=1, default=str))
         return 0
@@ -75,6 +83,12 @@ def cmd_info(args: argparse.Namespace) -> int:
           % ("ठीक" if kernel["ok"] else "विफल", kernel["image_bytes"], kernel["steps"]))
     print("  कॉर्पस: %d सूत्र फ़ाइलें, %d प्रशिक्षण पाठ"
           % (info["corpus"]["sutra_files"], info["corpus"]["texts"]))
+    mission = info.get("mission")
+    if mission:
+        print("  पिछला मिशन: %s — ppl %s, सर्वर %s, OS %s"
+              % (mission.get("target"), mission.get("best_perplexity"),
+                 "ठीक" if mission.get("server_smoke_ok") else "—",
+                 mission.get("os_origin")))
     return 0
 
 
@@ -140,25 +154,6 @@ def cmd_complete(args: argparse.Namespace) -> int:
     program = model.complete_program(args.prompt, max_tokens=args.tokens, seed=args.seed)
     print(program)
     return 0 if program.strip() else 1
-
-
-def cmd_chat(args: argparse.Namespace) -> int:
-    model = _load_model(args.model)
-    print("🕉️ ब्रह्म-LLM (%s, %d पैरामीटर) — 'निर्गम' से बाहर"
-          % (model.model.kind, model.model.parameter_count()))
-    print("   यह स्थानीय, सूत्र-प्रशिक्षित मॉडल है; यह cloud chatbot नहीं है।")
-    while True:
-        try:
-            prompt = input("आप> ")
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return 0
-        if prompt.strip() in ("निर्गम", "exit", "quit"):
-            return 0
-        print("ब्रह्म> " + model.generate(prompt, max_tokens=args.tokens,
-                                          temperature=args.temperature, seed=None).strip())
-        if args.once:
-            return 0
 
 
 def cmd_autotrain(args: argparse.Namespace) -> int:
@@ -233,25 +228,74 @@ def cmd_kernel(args: argparse.Namespace) -> int:
     return 0 if report.get("ok", True) else 1
 
 
-def cmd_build_app(args: argparse.Namespace) -> int:
-    from .app_builder import generate_app
+def cmd_ask(args: argparse.Namespace) -> int:
+    from .agent import BrahmaAgent
 
-    model = None
-    if not args.no_model:
-        try:
-            model = _load_model(args.model)
-        except SystemExit as error:
-            if not args.json:
-                print("(मॉडल नहीं मिला, टेम्पलेट से बनाया जा रहा है: %s)" % error)
-    manifest = generate_app(model, args.target, outdir=args.out, name=args.name,
-                            port=args.port, smoke=not args.no_smoke)
+    checkpoint = None if args.no_model else _model_dir(args.model)
+    if checkpoint and not os.path.isdir(checkpoint):
+        checkpoint = None
+    agent = BrahmaAgent(checkpoint=checkpoint)
+    message = " ".join(args.message) if isinstance(args.message, list) else args.message
+    result = agent.respond(message, image_path=args.out)
     if args.json:
-        print(json.dumps(manifest, ensure_ascii=False, indent=1, default=str))
+        print(json.dumps(result, ensure_ascii=False, indent=1, default=str))
     else:
-        print("🕉️ अनुप्रयोग: %s" % manifest["dir"])
-        print("  तर्क: %s (%s)" % (manifest["logic_file"], manifest["logic_origin"]))
-        print("  smoke: %s" % ("ठीक" if manifest["smoke"].get("ok") else manifest["smoke"]))
-    return 0 if manifest["logic_runs"] and manifest["smoke"].get("ok") else 1
+        print(result.get("text", ""))
+    return 0 if result.get("error") in (None, "") else 1
+
+
+def cmd_chat(args: argparse.Namespace) -> int:
+    from .agent import BrahmaAgent
+
+    checkpoint = None if args.no_model else _model_dir(args.model)
+    if checkpoint and not os.path.isdir(checkpoint):
+        checkpoint = None
+    agent = BrahmaAgent(checkpoint=checkpoint)
+    print("🕉️ ब्रह्म-LLM — बातचीत (`बाहर`/`exit` से बाहर)")
+    while True:
+        try:
+            message = input("आप › ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not message or message in ("बाहर", "exit", "quit"):
+            break
+        result = agent.respond(message)
+        print("ब्रह्म › " + str(result.get("text", "")).strip())
+    return 0
+
+
+def cmd_image(args: argparse.Namespace) -> int:
+    from .agent import BrahmaAgent
+
+    checkpoint = None if args.no_model else _model_dir(args.model)
+    if checkpoint and not os.path.isdir(checkpoint):
+        checkpoint = None
+    agent = BrahmaAgent(checkpoint=checkpoint)
+    result = agent.image(args.prompt, path=args.out)
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=1, default=str))
+    else:
+        print(result["text"])
+    return 0
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    from .server import create_app
+
+    checkpoint = None if args.no_model else _model_dir(args.model)
+    if checkpoint and not os.path.isdir(checkpoint):
+        checkpoint = None
+    app = create_app(checkpoint=checkpoint, image_dir=args.image_dir,
+                     allow_train=args.allow_train)
+    if args.once:
+        bound = app.start("127.0.0.1", args.port)
+        app.shutdown()
+        print("🕉️ ब्रह्म-LLM पोर्ट %d पर तैयार" % bound)
+        return 0
+    print("🕉️ ब्रह्म-LLM — http://%s:%d" % (args.host, args.port))
+    app.serve(args.host, args.port)
+    return 0
 
 
 def cmd_mission(args: argparse.Namespace) -> int:
@@ -259,14 +303,18 @@ def cmd_mission(args: argparse.Namespace) -> int:
 
     report = run_mission(args.target, keywords=args.keywords, outdir=args.out,
                          iterations=args.iterations, epochs=args.epochs, size=args.size,
-                         budget=args.budget, build_app=not args.no_app,
-                         write_os=not args.no_os,
+                         budget=args.budget, serve=not args.no_serve,
+                         write_os=not args.no_os, resume=args.resume,
+                         continuous=args.continuous,
+                         target_perplexity=args.target_perplexity,
+                         max_generations=args.max_generations,
                          log=(lambda message: None) if args.json else print)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1, default=str))
     else:
         print("रिपोर्ट: %s" % report["report_path"])
-    ok = report["kernel_verified"] and (not report["app"]["built"] or report["app"]["smoke_ok"])
+    ok = (report["kernel_verified"]
+          and (not report["server"]["served"] or report["server"]["smoke_ok"]))
     return 0 if ok else 1
 
 
@@ -335,7 +383,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     train = sub.add_parser("train", help="एक बार प्रशिक्षित करें")
     train.add_argument("--kind", default="neural", choices=("neural", "ngram"))
-    train.add_argument("--size", default="tiny", choices=("tiny", "small", "medium", "large"))
+    train.add_argument("--size", default="tiny", choices=SIZES)
     train.add_argument("--epochs", type=int, default=None)
     train.add_argument("--seed", type=int, default=7)
     train.add_argument("--docs", action="store_true", help="दस्तावेज़-गद्य भी शामिल करें")
@@ -359,19 +407,12 @@ def build_parser() -> argparse.ArgumentParser:
     complete.add_argument("--seed", type=int, default=None)
     complete.set_defaults(func=cmd_complete)
 
-    chat = sub.add_parser("chat", help="इंटरैक्टिव REPL")
-    chat.add_argument("--model", default=None)
-    chat.add_argument("--tokens", type=int, default=60)
-    chat.add_argument("--temperature", type=float, default=0.8)
-    chat.add_argument("--once", action="store_true", help="एक प्रश्न के बाद बाहर")
-    chat.set_defaults(func=cmd_chat)
-
     autotrain = sub.add_parser("autotrain", help="लक्ष्य + स्वायत्त प्रशिक्षण")
     autotrain.add_argument("--target", required=True)
     autotrain.add_argument("--keywords", default="")
     autotrain.add_argument("--iterations", type=int, default=3)
     autotrain.add_argument("--epochs", type=int, default=3)
-    autotrain.add_argument("--size", default="tiny", choices=("tiny", "small", "medium", "large"))
+    autotrain.add_argument("--size", default="tiny", choices=SIZES)
     autotrain.add_argument("--kind", default="neural", choices=("neural", "ngram"))
     autotrain.add_argument("--budget", type=float, default=180.0)
     autotrain.add_argument("--threshold", type=float, default=None)
@@ -395,27 +436,55 @@ def build_parser() -> argparse.ArgumentParser:
     kernel.add_argument("--json", action="store_true")
     kernel.set_defaults(func=cmd_kernel)
 
-    build_app = sub.add_parser("build-app", help="अनुप्रयोग बनाएँ")
-    build_app.add_argument("--target", default="नमस्ते विश्व अनुप्रयोग")
-    build_app.add_argument("--name", default=None)
-    build_app.add_argument("--out", default=None)
-    build_app.add_argument("--port", type=int, default=8000)
-    build_app.add_argument("--model", default=None)
-    build_app.add_argument("--no-model", action="store_true")
-    build_app.add_argument("--no-smoke", action="store_true")
-    build_app.add_argument("--json", action="store_true")
-    build_app.set_defaults(func=cmd_build_app)
+    ask = sub.add_parser("ask", help="मॉडल से पूछें (चैट/कोड/चित्र/स्थिति)")
+    ask.add_argument("message", nargs="+")
+    ask.add_argument("--model", default=None)
+    ask.add_argument("--out", default=None, help="चित्र फ़ाइल")
+    ask.add_argument("--no-model", action="store_true")
+    ask.add_argument("--json", action="store_true")
+    ask.set_defaults(func=cmd_ask)
 
-    mission = sub.add_parser("mission", help="लक्ष्य → प्रशिक्षण → आत्म-संपादन → OS → ऐप")
+    chat = sub.add_parser("chat", help="अन्तःक्रियात्मक बातचीत")
+    chat.add_argument("--model", default=None)
+    chat.add_argument("--no-model", action="store_true")
+    chat.set_defaults(func=cmd_chat)
+
+    picture = sub.add_parser("image", help="मॉडल-चालित चित्र (PNG)")
+    picture.add_argument("prompt")
+    picture.add_argument("--out", default=None)
+    picture.add_argument("--model", default=None)
+    picture.add_argument("--no-model", action="store_true")
+    picture.add_argument("--json", action="store_true")
+    picture.set_defaults(func=cmd_image)
+
+    serve = sub.add_parser("serve", help="मॉडल को HTTP पर परोसें")
+    serve.add_argument("--host", default="0.0.0.0")
+    serve.add_argument("--port", type=int, default=8080)
+    serve.add_argument("--model", default=None)
+    serve.add_argument("--image-dir", default=None)
+    serve.add_argument("--allow-train", action="store_true")
+    serve.add_argument("--no-model", action="store_true")
+    serve.add_argument("--once", action="store_true")
+    serve.set_defaults(func=cmd_serve)
+
+    mission = sub.add_parser(
+        "mission", help="लक्ष्य → प्रशिक्षण → आत्म-संपादन → OS → चलता सर्वर")
     mission.add_argument("--target", required=True)
     mission.add_argument("--keywords", default="")
     mission.add_argument("--iterations", type=int, default=2)
     mission.add_argument("--epochs", type=int, default=2)
-    mission.add_argument("--size", default="tiny", choices=("tiny", "small", "medium", "large"))
+    mission.add_argument("--size", default="tiny", choices=SIZES)
     mission.add_argument("--budget", type=float, default=180.0)
     mission.add_argument("--out", default=None)
-    mission.add_argument("--no-app", action="store_true")
+    mission.add_argument("--no-serve", action="store_true",
+                         help="सर्वर smoke test छोड़ें")
     mission.add_argument("--no-os", action="store_true")
+    mission.add_argument("--resume", action="store_true",
+                         help="पिछले मिशन के चेकपॉइंट से आगे बढ़ें")
+    mission.add_argument("--continuous", action="store_true",
+                         help="सुधार होते रहने तक अगली पीढ़ियाँ चलाएँ")
+    mission.add_argument("--target-perplexity", type=float, default=None)
+    mission.add_argument("--max-generations", type=int, default=3)
     mission.add_argument("--json", action="store_true")
     mission.set_defaults(func=cmd_mission)
 

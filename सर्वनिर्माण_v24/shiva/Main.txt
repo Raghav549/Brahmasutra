@@ -1,7 +1,0 @@
-
-सूत्र Launcher
-
-Load GUI
-assets/index.html
-
-Display GUI

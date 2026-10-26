@@ -56,6 +56,10 @@ class Lexer:
         self.line = 1
         self.column = 1
         self.tokens: List[Token] = []
+        #: Bracket depth: newlines inside ``()``/``[]``/``{}`` are continuations,
+        #: so a literal or call may span several lines (as in every other
+        #: language people actually write).
+        self.depth = 0
 
     # -- helpers ---------------------------------------------------------
     def _peek(self, offset: int = 0) -> str:
@@ -178,7 +182,8 @@ class Lexer:
             if ch == "\n":
                 line, column = self.line, self.column
                 self._advance()
-                self._add(TokenKind.NEWLINE, "\n", line, column, "\n")
+                if self.depth == 0:
+                    self._add(TokenKind.NEWLINE, "\n", line, column, "\n")
                 continue
             if ch == "#":
                 while self._peek() not in ("", "\n"):
@@ -199,6 +204,10 @@ class Lexer:
                     line, column = self.line, self.column
                     self._advance(len(op))
                     self._add(TokenKind.OP, op, line, column, op)
+                    if op in ("(", "[", "{"):
+                        self.depth += 1
+                    elif op in (")", "]", "}"):
+                        self.depth = max(0, self.depth - 1)
                     matched = True
                     break
             if matched:

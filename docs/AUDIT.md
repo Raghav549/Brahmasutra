@@ -40,7 +40,7 @@ Concretely, at the audited commit:
 4. **Repository hygiene**: `.gitignore`, `pyproject.toml`, 386 committed `__pycache__/*.pyc` files untracked, 3 syntax errors and 3 runtime bugs fixed.
 5. **This audit**, plus a language specification and a testing guide.
 
-6. **A language model that lives here (2.0.0)** — `brahma_llm/`: an akṣara
+6. **A language model that lives here (2.0.0 → 3.0.0)** — `brahma_llm/`: an akṣara
    tokenizer, two trainable models (n-gram and a neural LM with hand-written
    backpropagation verified against central differences), a target-driven
    autonomous trainer, prediction-preserving self-editing, a सूत्र-OS kernel
@@ -538,7 +538,7 @@ changed afterwards, and how each claim is verified.
 | Modules importing correctly as packages | 725 / 725 | **748 / 748** | `python -c "import brahma…"` |
 | Legacy demo scripts passing | 40 / 51 | **51 / 51** | `tools/legacy_baseline.py` |
 | Demo scripts crashing with a traceback | 11 | **0** | root sweep, §10.3 |
-| Automated tests | 326 (12 xfail) | **460 (0 xfail)** | `pytest -q` |
+| Automated tests | 326 (12 xfail) | **480 (0 xfail)** | `pytest -q` |
 | flake8 (`brahma tests tools`) | 0 | **0** | CI |
 | Committed binary artefacts | 13 fake/`stale` | **0** (deleted + ignored) | `git ls-files '*.apk' '*.bin'` |
 

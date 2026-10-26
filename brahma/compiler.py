@@ -163,10 +163,28 @@ class Compiler:
                 self._expr(item, code)
             code.emit("BUILD_LIST", len(node.items), node.line)
 
+        elif isinstance(node, ast.DictExpr):
+            for key, value in zip(node.keys, node.values):
+                self._expr(key, code)
+                self._expr(value, code)
+            code.emit("BUILD_DICT", len(node.keys), node.line)
+
         elif isinstance(node, ast.Index):
             self._expr(node.target, code)
             self._expr(node.index, code)
             code.emit("LOAD_INDEX", line=node.line)
+
+        elif isinstance(node, ast.Slice):
+            self._expr(node.target, code)
+            if node.start is None:
+                code.emit("LOAD_CONST", None, node.line)
+            else:
+                self._expr(node.start, code)
+            if node.stop is None:
+                code.emit("LOAD_CONST", None, node.line)
+            else:
+                self._expr(node.stop, code)
+            code.emit("LOAD_SLICE", line=node.line)
 
         elif isinstance(node, ast.Call):
             code.emit("LOAD_NAME", node.callee, node.line)
