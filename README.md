@@ -7,7 +7,7 @@ that writes सूत्र and retrains itself.**
 [![CI](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml/badge.svg)](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-529%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-544%20passing-brightgreen)](tests/)
 
 ```brahma
 कार्य फिब(n)
@@ -56,7 +56,7 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, interpolation, slice assignment, 40+ builtins) | ✅ **stable**, 529 tests, 93 % coverage |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, interpolation, slice assignment, 40+ builtins) | ✅ **stable**, 544 tests, 93 % coverage |
 | `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, **सूत्र-OS kernel**, agent (chat·code·run·explain·image) and HTTP server | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
@@ -65,7 +65,8 @@ been rebuilt on a sound footing.
 | `brahma_ai` — n-gram model + prompt router | ✅ works, honestly labelled (see below) |
 | `brahma_packaging` — Android bundles | ✅ builds ZIP bundles; **not** installable APKs |
 | `native_vm/` — a small independent C virtual machine | 🧪 prototype (works, subset of the language) |
-| `kernel/` — सूत्र-OS shell over the real `SUTRAOS` image | ✅ boots and verifies (`brahma llm kernel verify`) |
+| `brahma_llm/shell.py` + `शेल_चलाओ` in the kernel — सूत्र-OS shell | ✅ live kernel state, `brahma llm shell`, `POST /shell` |
+| `kernel/` — the older सूत्र-OS userland over the real image | ✅ boots and verifies (`brahma llm kernel verify`) |
 | `.iso` images left by the old build scripts | 🧪 prototype; never bootable, kept out of git |
 | `सूत्र_*.py`, `ब्रह्म_*.py`, `*_तंत्र.py` (≈700 files) | 📦 **legacy**, but now import-safe: 51/51 demos pass, pinned by `tests/legacy_baseline.json` |
 
@@ -83,6 +84,8 @@ brahma llm serve --port 8080           # the model *is* the app: chat · code ·
 brahma llm ask "कोड लिखो: अभाज्य संख्या जाँच"      # one-shot: model writes + runs सूत्र
 brahma llm image "शांति" --out om.png  # model-chosen सूत्र program → real PNG
 brahma llm sutra-math                  # the model's maths, executed by सूत्र itself
+brahma llm shell                       # सूत्र-OS: ps · free · ls · cat · write · fork · run
+brahma llm kernel verify               # boot the OS image and check the contract
 ```
 
 A measured autonomous run (4 rounds, 9.2 s, `docs/LLM.md` §3.2): 24/24 generated
@@ -93,9 +96,11 @@ The kernel is a real सूत्र program (`brahma_llm/os_kernel.py`): memory
 process table, round-robin scheduler, syscall table, in-memory filesystem and
 interrupt counter plus a guarded syscall path (the kernel catches its own
 faults with `प्रयास`/`पकड़`), each self-tested at boot — 6/6 subsystems,
-`READY`, and a dictionary of ten callable kernel functions. No app builder ships any more: the
-model answers chat, writes and executes सूत्र code, explains code and renders
-images, on one stdlib HTTP server.
+`READY`, and a dictionary of ten callable kernel functions.  Its shell is a
+सूत्र function too (`शेल_चलाओ`), reachable as `brahma llm shell` and as
+`POST /shell`, with live kernel state between commands.  No app builder ships any
+more: the model answers chat, writes and executes सूत्र code, explains code,
+renders images and drives the OS, on one stdlib HTTP server.
 
 ### Honesty rules this repository follows
 
@@ -233,7 +238,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 529 passed in ~28 s
+pytest -q                                  # 544 passed in ~28 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered

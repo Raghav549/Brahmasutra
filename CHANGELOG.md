@@ -4,6 +4,48 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.3.0] — 2026-10-27
+
+### Added
+
+* **सूत्र-OS शेल.** `brahma llm shell` boots the kernel and feeds every line to
+  `शेल_चलाओ` — a dispatcher written **in सूत्र** inside `brahma_llm/os_kernel.py`,
+  next to the allocator and the process table.  Commands: `help`, `ps`, `free`,
+  `ls`, `cat`, `write`, `fork`, `kill`, `syscall`, `run`, `exit`, with Sanskrit
+  aliases.  Kernel state persists between commands (a forked process appears in
+  the next `ps`; a file written is visible to `cat`/`ls`).
+* **`POST /shell`** — the same shell over HTTP, guarded by a lock, so the server
+  exposes the operating system and not only the model.
+* **`run <सूत्र>`** inside the shell compiles the rest of the line and executes it
+  in the same VM, so user code shares the kernel's namespace (`run दर्शय 6 * 7`
+  → `42`).
+* The mission report now includes `server.shell_ok` and `server.shell_run`, so a
+  mission fails loudly if the OS shell stops answering.
+* `brahma llm train` prints elapsed seconds and the epoch count; the JSON report
+  gains `elapsed_seconds` and `epochs`.
+* 15 new tests (shell 13, HTTP `/shell` 2) — **544** total.
+
+### Changed
+
+* The kernel's own version file `/इत्यादि/संस्करण` now carries the package version,
+  pinned by a test (`cat /इत्यादि/संस्करण` must equal `brahma.__version__`).
+* The kernel grew from 1 865 to 1 873 boot steps and from 122 044 to 177 064
+  bytes because the shell lives inside it.
+* **Trained the largest preset end-to-end.**  `brahma llm train --size brahma
+  --epochs 1` → **1 390 383 parameters, 189.3 s, loss 1.2203, perplexity
+  25 600 162** on this machine.  The previous release could only instantiate
+  and count that preset; the perplexity number is absurd because 53 training
+  texts cannot train 1.4 M weights, and `docs/LLM.md` §9 says so instead of
+  hiding it.
+
+### Removed
+
+* Five unreferenced root scripts (`CPU_test_v2.py`, `brahma_auto_v4.py` — a
+  byte-identical duplicate of `brahma_auto_v3.py` — `compile_run.py`,
+  `cpu_run.py`, `run_binary.py`).  An audit of every tracked file found no
+  textual reference to any of them, and the suite, the legacy baseline and the
+  221-script demo sweep stay green without them.
+
 ## [3.2.0] — 2026-10-27
 
 ### Added

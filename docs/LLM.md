@@ -81,15 +81,22 @@ worst absolute difference between analytic and numeric gradient: 2.35e-11
 
 ### 2.3 Size presets
 
-| preset | d_model | hidden | order | vocab cap | params (counted) | 1 epoch: time / perplexity |
-|---|---|---|---|---|---|
+| preset | d_model | hidden | order | vocab cap | params at cap | 1 epoch: time / perplexity |
+|---|---|---|---|---|---|---|
 | `tiny` | 8 | 32 | 2 | 96 | 4 480 | 2 s / **13.8** |
 | `small` | 16 | 64 | 3 | 160 | 16 096 | 5 s / — |
 | `medium` | 24 | 128 | 4 | 256 | 51 584 | 11 s / — |
 | `large` | 32 | 192 | 5 | 384 | 117 312 (trained: 115 287) | 21.7 s / 86.6 |
 | `xlarge` | 48 | 384 | 6 | 512 | 314 240 (trained: 254 919) | 50.3 s / 342.6 |
 | `huge` | 64 | 768 | 8 | 768 | 886 272 (trained: 558 903) | **107.4 s / 3 139.9** |
-| `brahma` | 96 | 1536 | 10 | 1024 | **2 411 008** | not trained (hours) |
+| `brahma` | 96 | 1536 | 10 | 1024 | **2 411 008** | **189.3 s / 25 600 162** (1 390 383 params as trained) |
+
+The `params at cap` column counts embeddings sized for the preset's vocabulary
+**cap**; a real training run sizes the tables for the corpus vocabulary it
+actually saw, which is why the counts reported by `brahma llm train` differ a
+little from the cap column.  With the current 383-token vocabulary the presets
+come out at 16 247 / 34 159 / 71 015 / 117 087 / 258 383 / 565 567 /
+**1 364 255** parameters respectively.
 
 The last column is the point of this table: **more parameters make held-out
 perplexity worse** on this corpus, because the vocabulary and the model outgrow
@@ -197,6 +204,18 @@ The kernel implements six subsystems, each self-tested at boot, all in सूत
 | **आह्वान** | syscall table (`sys_write`, `sys_read`, `sys_exit`, `sys_fork`, `sys_time`) with per-call counters |
 | **सञ्चिका** | in-memory filesystem with inodes, sizes, create/write/read/list |
 | **व्यवधान** | interrupt counter with source tracking |
+| **सुरक्षित आह्वान** | guarded syscall path: an unknown syscall is raised, caught with `प्रयास`/`पकड़`, recorded and returned as `{"ok": false}` |
+| **शेल** | `शेल_चलाओ(पंक्ति)` — the command dispatcher, in सूत्र (see §4.2) |
+
+**Scope, stated plainly.**  This is an operating-system *model* that really
+executes on the project's VM, not a kernel that boots on bare metal.  It has a
+single flat address space (an allocator over a 1 024-byte heap, no paging, no
+MMU), cooperative scheduling driven by calls to `अगली_प्रक्रिया()` rather than a
+hardware timer interrupt, an in-memory filesystem that disappears when the
+process ends (no block device), and no privilege separation.  What it does have
+is what an OS course would ask for — allocation, processes, scheduling,
+syscalls, files, interrupts and a shell — implemented in one Sanskrit program
+that compiles to bytecode and boots through a fixed, verified contract.
 
 The boot contract is enforced by `verify()`: banner → self-test line
 `स्व-परीक्षण: ठीक / ठीक` → subsystem summary → `READY`.  `install()` refuses to
@@ -216,7 +235,7 @@ $ brahma llm kernel verify
 अपवाद: 1 पकड़े (अज्ञात syscall 99)
 कर्नेल API: 10 फलन
 READY
-  चरण: 1865, छवि: 122044 बाइट, स्थिति: ठीक
+  चरण: 1873, छवि: 177064 बाइट, स्थिति: ठीक
 ```
 
 The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of ten callable
@@ -228,9 +247,49 @@ and — since 3.1 — closures, `प्रयास`/`पकड़` and `$"…{�
 support itself: `सुरक्षित_आह्वान` turns an unknown syscall into a raised, caught fault
 and records it.
 
-The shell in `kernel/kernel_engine.py` is a real userland for it — `boot`,
-`verify`, `run FILE.sutra`, `memory`, `exit`. `.sutra` files are **compiled**;
-the old implementation `exec()`-ed arbitrary files as Python, which is gone.
+The kernel has a shell of its own — and the dispatcher is a **सूत्र program**.
+`शेल_चलाओ(पंक्ति)` lives in `brahma_llm/os_kernel.py` next to the allocator and
+the process table; `brahma_llm/shell.py` only owns the read-eval-print loop:
+
+```
+$ brahma llm shell
+🕉️ सूत्र-OS कर्नेल प्रारम्भ
+…
+READY
+`help` से आदेश देखें, `exit` से बाहर।
+सूत्र-OS> ps
+  pid 1  कर्नेल  तैयार  टिक 1
+  pid 2  शेल  तैयार  टिक 1
+  pid 3  सेवक  समाप्त  टिक 0
+सूत्र-OS> write /नमूना नमस्ते ब्रह्म
+  लिखा: /नमूना (13 बाइट)
+सूत्र-OS> cat /नमूना
+  नमस्ते ब्रह्म
+सूत्र-OS> fork शेल-कार्य
+  नया pid: 5
+सूत्र-OS> syscall 99
+  {ok: असत्य, त्रुटि: अज्ञात syscall 99}
+सूत्र-OS> run दर्शय 6 * 7
+42
+सूत्र-OS> exit
+```
+
+State is the kernel's own: a process forked in one command is visible to `ps`
+in the next, files written with `write` persist for `cat` and `ls`, and the
+guarded syscall shows the caught fault.  `run <सूत्र>` compiles the rest of the
+line and executes it **inside the same VM**, so user code shares the kernel's
+namespace.  The same shell answers over HTTP at `POST /shell`:
+
+```
+$ curl -s localhost:8080/shell -d '{"command":"free"}' -H 'Content-Type: application/json'
+{"command": "free", "output": ["  स्मृति: 352 बाइट, 4 खंड, 0 मुक्त", "…"], "ok": true, …}
+```
+
+### 4.2 The shell is written in सूत्र
+
+The older `kernel/kernel_engine.py` userland (`boot`, `verify`, `run FILE.sutra`,
+`memory`, `exit`) still exists and still **compiles** `.sutra` rather than
+`exec()`-ing Python, but the सूत्र dispatcher above is the one the CLI uses.
 
 ---
 
@@ -358,6 +417,7 @@ previous mission rather than against infinity.
 | `POST /run` | compile + execute सूत्र on the VM |
 | `POST /explain` | structural analysis (functions, opcodes, nesting) |
 | `GET /image?prompt=…` | a real PNG rendered from a सूत्र program the model chose |
+| `POST /shell` | `{"command": "…"}` → the सूत्र-OS shell, on the kernel's live state |
 
 The agent (`brahma_llm/agent.py`) splits into real capabilities, not promises:
 
@@ -474,7 +534,8 @@ costs **~2 s at 4.5 k parameters, 21.7 s at 115 k, 50.3 s at 255 k and 107.4 s a
 | 115 287 (`large`) | 21.7 s/epoch, ppl 86.6 | worse: vocabulary outgrew the text |
 | 254 919 (`xlarge`) | 50.3 s/epoch, ppl 342.6 | worse again |
 | 558 903 (`huge`) | 107.4 s/epoch, ppl 3 139.9 | worse still — twice, identically |
-| 2 411 008 (`brahma`) | instantiated + counted, not trained | hours/epoch, no data to justify it |
+| 1 390 383 (`brahma`, as trained) | **189.3 s/epoch, ppl 25 600 162** | the largest model this box can train in three minutes |
+| 2 411 008 (`brahma` at its vocabulary cap) | instantiated + counted | no corpus for it yet |
 | 10⁹–10¹¹ | not feasible here | needs accelerators, 10¹²+ tokens, months |
 
 So the code is *architecture-scalable* and this corpus is not.  Growing the model
@@ -488,9 +549,11 @@ them), a bigger held-out set, then a larger `--size`.
 
 ## 10. Limitations
 
-* **Size**: the largest instantiable preset here is **2.41 M parameters**
-  (`--size brahma`), and the largest actually trained end-to-end in this repo is
-  558 903 (`--size huge`, 107 s, one epoch).  This is not, and cannot be
+* **Size**: the largest instantiable preset here is **2.41 M parameters** at
+  its vocabulary cap (`--size brahma`), and the largest actually trained
+  end-to-end in this repo — now measured, not projected — is **1 390 383
+  parameters in 189.3 s for one epoch** (perplexity 2.56 × 10⁷, because 53
+  training texts cannot train 1.4 M weights).  This is not, and cannot be
   described as, the largest or most powerful LLM in existence — frontier models
   are 10⁵–10⁶× larger and are trained on trillions of tokens.  What this project
   claims is narrower and checkable: the whole stack (language, VM, kernel,
@@ -521,7 +584,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-529 passed in 30.0 s
+544 passed in 30.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural

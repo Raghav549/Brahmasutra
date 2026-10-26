@@ -124,6 +124,8 @@ def _smoke_server(model, target: str, image_dir: str) -> Dict[str, object]:
         chat = post("/chat", {"message": "कोड लिखो: " + target})
         run = post("/run", {"source": "दर्शय 6 * 7"})
         picture = get("/image?prompt=" + urllib.parse.quote(target))
+        shell = post("/shell", {"command": "ps"})
+        shell_run = post("/shell", {"command": "run दर्शय 6 * 7"})
         report.update({
             "served": True,
             "port": port,
@@ -134,11 +136,14 @@ def _smoke_server(model, target: str, image_dir: str) -> Dict[str, object]:
             "run_ok": run.get("ok") is True and run.get("output") == ["42"],
             "image_ok": isinstance(picture, bytes) and picture.startswith(b"\x89PNG"),
             "image_bytes": len(picture) if isinstance(picture, bytes) else 0,
+            "shell_ok": bool(shell.get("ok") and shell.get("output")),
+            "shell_run": shell_run.get("output"),
             "endpoints": ["/", "/status", "/kernel", "/chat", "/generate",
-                          "/run", "/explain", "/image"],
+                          "/run", "/explain", "/image", "/shell"],
         })
         report["smoke_ok"] = bool(report["kernel_ok"] and report["chat_ok"]
-                                  and report["run_ok"] and report["image_ok"])
+                                  and report["run_ok"] and report["image_ok"]
+                                  and report["shell_ok"])
     except Exception as error:  # noqa: BLE001 - reported, never hidden
         report["error"] = "%s: %s" % (type(error).__name__, error)
     finally:

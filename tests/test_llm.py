@@ -467,6 +467,34 @@ class TestServer:
         explain = self._post(running, "/explain", {"source": "दर्शय 1"})
         assert explain["ok"] is True
 
+    def test_shell_endpoint_drives_the_kernel_over_http(self, running):
+        first = self._post(running, "/shell", {"command": "free"})
+        assert first["ok"] is True
+        assert any("स्मृति" in line for line in first["output"])
+
+        # state is shared between requests: fork here, see it in the next call
+        forked = self._post(running, "/shell", {"command": "fork http-कार्य"})
+        assert "नया pid" in forked["output"][0]
+        listing = self._post(running, "/shell", {"command": "ps"})
+        assert any("http-कार्य" in line for line in listing["output"])
+
+        run = self._post(running, "/shell", {"command": "run दर्शय 6 * 7"})
+        assert run["output"] == ["42"]
+
+        caught = self._post(running, "/shell", {"command": "syscall 99"})
+        assert "अज्ञात syscall 99" in caught["output"][0]
+
+    def test_shell_endpoint_requires_a_command(self, running):
+        import urllib.error
+        import urllib.request
+
+        request = urllib.request.Request(
+            running + "/shell", data=b"{}", method="POST",
+            headers={"Content-Type": "application/json"})
+        with pytest.raises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(request, timeout=30)
+        assert caught.value.code == 400
+
     def test_image_endpoint_returns_png(self, running):
         import urllib.parse
 
@@ -568,6 +596,8 @@ class TestMission:
         assert report["server"]["run_ok"] is True
         assert report["server"]["image_ok"] is True
         assert report["server"]["kernel_ok"] is True
+        assert report["server"]["shell_ok"] is True
+        assert report["server"]["shell_run"] == ["42"]
         assert report["server"]["smoke_ok"] is True
         assert os.path.exists(report["report_path"])
         saved = json.load(open(report["report_path"], encoding="utf-8"))
@@ -655,3 +685,102 @@ class TestMission:
         record = editor.try_os(_compose_kernel("स्थापय अ = "))
         assert record.accepted is False
         assert "SyntaxError" in record.detail or "ParseError" in record.detail or "LexError" in record.detail
+
+
+class TestKernelShell:
+    """सूत्र-OS शेल: the dispatcher is सूत्र, the state is the kernel's (3.3)."""
+
+    def test_boot_log_ends_ready(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        assert any("READY" in line for line in shell.boot_output)
+        assert shell.exited is False
+
+    def test_help_lists_commands(self):
+        from brahma_llm.shell import KernelShell
+
+        output = KernelShell().command("help")["output"]
+        assert output and all(word in output[0] for word in ("ps", "free", "cat", "exit"))
+
+    def test_process_table_is_live(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        before = shell.command("ps")["output"]
+        shell.command("fork शेल-कार्य")
+        after = shell.command("ps")["output"]
+        assert len(after) == len(before) + 1
+        assert any("शेल-कार्य" in line for line in after)
+
+    def test_kill_changes_the_process_state(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        assert "समाप्त: 1" in shell.command("kill 1")["output"][0]
+        assert "pid नहीं मिला: 99" in shell.command("kill 99")["output"][0]
+
+    def test_filesystem_round_trip_between_commands(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        assert "लिखा" in shell.command("write /नमूना नमस्ते ब्रह्म")["output"][0]
+        assert shell.command("cat /नमूना")["output"] == ["  नमस्ते ब्रह्म"]
+        assert any("/नमूना" in line for line in shell.command("ls")["output"])
+
+    def test_missing_file_is_reported_not_raised(self):
+        from brahma_llm.shell import KernelShell
+
+        assert "नहीं मिली" in KernelShell().command("cat /नहीं/है")["output"][0]
+
+    def test_guarded_syscall_through_the_shell(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        unknown = shell.command("syscall 99")["output"][0]
+        assert "असत्य" in unknown and "अज्ञात syscall 99" in unknown
+        assert "सत्य" in shell.command("syscall 1")["output"][0]
+
+    def test_run_executes_sutra_inside_the_kernel_namespace(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        assert shell.command("run दर्शय 6 * 7")["output"] == ["42"]
+        shell.command("run स्थापय गिनती = 41")
+        assert shell.command("run दर्शय गिनती + 1")["output"] == ["42"]
+
+    def test_run_reports_faults(self):
+        from brahma_llm.shell import KernelShell
+
+        result = KernelShell().command("run 1 / 0")
+        assert result["ok"] is False
+        assert "शून्य से भाग" in result["error"]
+
+    def test_unknown_command_is_reported(self):
+        from brahma_llm.shell import KernelShell
+
+        result = KernelShell().command("उड़ान")
+        assert result["ok"] is True
+        assert "अज्ञात आदेश" in result["output"][0]
+
+    def test_exit_stops_a_script(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        results = shell.script(["free", "exit", "ps"])
+        assert len(results) == 2 and results[-1]["exit"] is True
+
+    def test_cli_json_contract(self, capsys, home):
+        from brahma_llm.shell import main
+
+        assert main(["--json", "--command", "free"]) == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["commands"][0]["ok"] is True
+        assert any("स्मृति" in line for line in payload["commands"][0]["output"])
+
+    def test_installed_version_file_matches_the_package(self):
+        import brahma
+        from brahma_llm.shell import KernelShell
+
+        reported = KernelShell().command("cat /इत्यादि/संस्करण")["output"][0].strip()
+        assert reported == brahma.__version__

@@ -28,7 +28,7 @@ import argparse
 import json
 import os
 import sys
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 
 #: Every size preset the model knows about, largest last.
@@ -115,9 +115,12 @@ def cmd_corpus(args: argparse.Namespace) -> int:
 
 
 def cmd_train(args: argparse.Namespace) -> int:
+    import time
+
     from .model import BrahmaLLM
     from .programs import load_corpus
 
+    started = time.time()
     corpus = load_corpus(include_docs=args.docs)
     model = BrahmaLLM.create(kind=args.kind, size=args.size, seed=args.seed)
     model.fit(corpus, epochs=args.epochs,
@@ -125,13 +128,16 @@ def cmd_train(args: argparse.Namespace) -> int:
     metrics = model.evaluate(corpus[::5])
     out = args.out or _model_dir(None)
     model.save(out)
+    elapsed = time.time() - started
     report = {"model": model.info(), "out": out, "holdout_perplexity": metrics["perplexity"],
-              "train_texts": len(corpus)}
+              "train_texts": len(corpus), "elapsed_seconds": round(elapsed, 2),
+              "epochs": args.epochs}
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1, default=str))
     else:
         print("🕉️ प्रशिक्षण पूर्ण: %s" % out)
-        print("  पैरामीटर: %d, perplexity: %.3f" % (report["model"]["params"], metrics["perplexity"]))
+        print("  पैरामीटर: %d, perplexity: %.3f, समय: %.1f s (%d epoch)"
+              % (report["model"]["params"], metrics["perplexity"], elapsed, args.epochs))
     return 0
 
 
@@ -226,6 +232,21 @@ def cmd_kernel(args: argparse.Namespace) -> int:
     for line in report["output"]:
         print(line)
     return 0 if report.get("ok", True) else 1
+
+
+def cmd_shell(args: argparse.Namespace) -> int:
+    from .shell import main as shell_main
+
+    argv: List[str] = []
+    for command in args.command:
+        argv.extend(["--command", command])
+    if args.script:
+        argv.extend(["--script", args.script])
+    if args.json:
+        argv.append("--json")
+    if args.quiet:
+        argv.append("--quiet")
+    return shell_main(argv)
 
 
 def cmd_ask(args: argparse.Namespace) -> int:
@@ -435,6 +456,13 @@ def build_parser() -> argparse.ArgumentParser:
     kernel.add_argument("--out", default=None)
     kernel.add_argument("--json", action="store_true")
     kernel.set_defaults(func=cmd_kernel)
+
+    shell = sub.add_parser("shell", help="सूत्र-OS शेल (कर्नेल स्वयं आदेश चलाता है)")
+    shell.add_argument("--command", "-c", action="append", default=[])
+    shell.add_argument("--script", default=None)
+    shell.add_argument("--json", action="store_true")
+    shell.add_argument("--quiet", action="store_true")
+    shell.set_defaults(func=cmd_shell)
 
     ask = sub.add_parser("ask", help="मॉडल से पूछें (चैट/कोड/चित्र/स्थिति)")
     ask.add_argument("message", nargs="+")
