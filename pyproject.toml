@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brahma-lang"
+version = "1.0.0"
+description = "BRAHMA — a Sanskrit-native programming language with a bytecode compiler and stack VM"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "CC0-1.0"
+license-files = ["LICENSE"]
+authors = [{ name = "BRAHMA contributors" }]
+keywords = ["sanskrit", "programming-language", "compiler", "bytecode", "virtual-machine", "interpreter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Natural Language :: Sanskrit",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+]
+
+[project.urls]
+Homepage = "https://github.com/Raghav549/Brahmasutra"
+Documentation = "https://github.com/Raghav549/Brahmasutra/blob/main/docs/LANGUAGE.md"
+Issues = "https://github.com/Raghav549/Brahmasutra/issues"
+
+[project.scripts]
+brahma = "brahma.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "flake8>=5"]
+
+[tool.setuptools]
+packages = ["brahma"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+norecursedirs = [
+    ".git",
+    "__pycache__",
+    "*.egg",
+    "build",
+    "dist",
+    ".venv",
+]
+markers = [
+    "slow: long running tests (legacy demo matrix)",
+]
+
+[tool.flake8]
+max-line-length = 127
+extend-ignore = ["E203", "W503"]
+exclude = [".git", "__pycache__", "build", "dist", ".venv"]

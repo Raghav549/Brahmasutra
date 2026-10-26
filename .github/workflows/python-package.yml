@@ -1,40 +1,115 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python package
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main", "arena/**"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install linters
+        run: python -m pip install --upgrade pip flake8
+      - name: flake8 (engine, tests, tools)
+        run: flake8 brahma tests tools --count --statistics
+      - name: Syntax check every Python file in the repository
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          bad = []
+          for path in pathlib.Path(".").rglob("*.py"):
+              if any(part in {".git", "__pycache__", ".venv", "build", "dist"} for part in path.parts):
+                  continue
+              try:
+                  compile(path.read_text(encoding="utf-8"), str(path), "exec")
+              except SyntaxError as exc:
+                  bad.append("%s: %s" % (path, exc))
+          print("\n".join(bad) if bad else "सभी Python फ़ाइलें वाक्यविन्यास-शुद्ध हैं")
+          sys.exit(1 if bad else 0)
+          PY
 
+  test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pytest
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]" pytest-cov
+      - name: Run test suite
+        run: pytest -q --cov=brahma --cov-report=term-missing
+      - name: CLI smoke test
+        run: |
+          python -m brahma version
+          python -m brahma run examples/नमस्ते.sutra
+          python -m brahma compile examples/फिबोनाची.sutra -o /tmp/fib.sbc
+          python -m brahma disasm /tmp/fib.sbc > /dev/null
+          python -m brahma run-bytecode /tmp/fib.sbc
+
+  legacy-baseline:
+    name: Legacy baseline freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Every legacy demo must be recorded in the baseline
+        run: python tools/legacy_baseline.py --check
+
+  package:
+    name: Build & install wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Install the wheel into a clean environment
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install dist/*.whl
+          /tmp/venv/bin/brahma version
+          /tmp/venv/bin/brahma run examples/नमस्ते.sutra
+      - uses: actions/upload-artifact@v4
+        with:
+          name: brahma-lang-dist
+          path: dist/
+
+  native:
+    name: Native C VM (optional component)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native VM
+        run: gcc -O2 -Wall -o /tmp/sutra_vm native_vm/sutra_vm.c
+      - name: Run a sample program
+        run: |
+          printf 'स्थापित R2 10\nप्रदर्शित R2\n' > /tmp/sample.sbc
+          /tmp/sutra_vm /tmp/sample.sbc | tee /tmp/out.txt
+          grep -q "10" /tmp/out.txt
