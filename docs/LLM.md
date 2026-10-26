@@ -137,6 +137,30 @@ Two honest observations that the table makes impossible to hide:
 * the **n-gram model beats the neural model on this corpus**, which is expected
   for ~33 k characters and is exactly why the baseline ships alongside it.
 
+### 3.1b Data beats size (`brahma llm corpus --generate`)
+
+The autonomous loop can grow its own training set: `ProgramGenerator` writes
+programs that are compiled **and executed** before they are written, and
+`load_corpus()` picks them up from `$BRAHMA_HOME/corpus` on the next training
+run.  Measured here, 3 epochs each, identical seed and identical parameter
+count within a row:
+
+| size | corpus | texts | chars | perplexity | time |
+|---|---|---|---|---|---|
+| `tiny` | base | 117 | 63 522 | 15.389 | 1.7 s |
+| `tiny` | + 60 generated | 165 | 71 793 | **6.941** (−55 %) | 2.0 s |
+| `small` | base | 117 | 63 522 | 19.687 | 5.5 s |
+| `small` | + 300 generated | 405 | 105 790 | **4.795** (−76 %) | 8.9 s |
+
+That is the honest lesson of §9 in one table: on this project the binding
+constraint is *data*, not parameters.  Fifty more valid programs buy more than
+ten times more weights do.
+
+```bash
+brahma llm corpus --generate 300 --seed 5   # writes $BRAHMA_HOME/corpus/NNNN.sutra
+brahma llm train --size small --epochs 3    # the new files are part of the corpus
+```
+
 ### 3.2 The autonomous loop (`brahma llm autotrain`)
 
 ```
@@ -494,7 +518,7 @@ Concrete entry points:
 
 ```
 brahma llm info [--model DIR] [--json]
-brahma llm corpus [--sample N] [--json]
+brahma llm corpus [--sample N] [--generate N] [--goal TEXT] [--seed S] [--out DIR] [--json]
 brahma llm train [--kind neural|ngram] [--size tiny|small|medium|large|xlarge|huge|brahma] [--epochs N] [--docs] [--out DIR]
 brahma llm generate PROMPT [--tokens N] [--temperature T] [--engine python|sutra]
 brahma llm complete [PROMPT] [--tokens N]          # valid सूत्र program only
@@ -505,6 +529,7 @@ brahma llm serve [--host H] [--port P] [--model DIR] [--once] [--allow-train]
 brahma llm autotrain --target TEXT [--iterations N] [--epochs N] [--budget S] [--json]
 brahma llm evolve --body|--os [--extra N] [--json]
 brahma llm kernel build|boot|verify|install|info [--json]
+brahma llm shell [--command CMD]... [--script FILE] [--json]
 brahma llm mission --target TEXT [--iterations N] [--epochs N] [--resume]\
                     [--continuous] [--target-perplexity P] [--no-os] [--no-serve] [--json]
 brahma llm sutra-math [--json]
@@ -584,7 +609,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-544 passed in 30.0 s
+548 passed in 30.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural

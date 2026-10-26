@@ -88,8 +88,48 @@ def doc_texts(root: Optional[str] = None, limit: int = 12) -> List[str]:
     return texts[:limit * 20]
 
 
-def load_corpus(root: Optional[str] = None, include_docs: bool = True) -> List[str]:
-    """All training texts: सूत्र sources + embedded seeds (+ optional prose)."""
+def generated_dir() -> str:
+    """Where generated programs are written (``$BRAHMA_HOME/corpus``)."""
+    from brahma_paths import data_root
+
+    return data_root("corpus")
+
+
+def save_generated(texts: Sequence[str], outdir: Optional[str] = None,
+                   start: int = 1) -> List[str]:
+    """Write validated programs as ``NNNN.sutra``; returns the paths written."""
+    outdir = outdir or generated_dir()
+    os.makedirs(outdir, exist_ok=True)
+    written: List[str] = []
+    for offset, text in enumerate(texts):
+        path = os.path.join(outdir, "%04d.sutra" % (start + offset))
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(text if text.endswith("\n") else text + "\n")
+        written.append(path)
+    return written
+
+
+def _generated_texts(outdir: str) -> List[str]:
+    if not os.path.isdir(outdir):
+        return []
+    texts: List[str] = []
+    for name in sorted(os.listdir(outdir)):
+        if not name.endswith(".sutra"):
+            continue
+        try:
+            with open(os.path.join(outdir, name), "r", encoding="utf-8",
+                      errors="replace") as handle:
+                source = handle.read()
+        except OSError:
+            continue
+        if source.strip():
+            texts.append(source)
+    return texts
+
+
+def load_corpus(root: Optional[str] = None, include_docs: bool = True,
+                extra_dirs: Optional[Sequence[str]] = None) -> List[str]:
+    """All training texts: सूत्र sources + generated corpus + seeds (+ prose)."""
     texts = list(EMBEDDED_SEEDS)
     for path in sutra_files(root):
         try:
@@ -99,6 +139,8 @@ def load_corpus(root: Optional[str] = None, include_docs: bool = True) -> List[s
             continue
         if source.strip():
             texts.append(source)
+    for directory in (list(extra_dirs) if extra_dirs is not None else [generated_dir()]):
+        texts.extend(_generated_texts(directory))
     texts.extend(_kernel_and_math_sources())
     if include_docs:
         texts.extend(doc_texts(root))
