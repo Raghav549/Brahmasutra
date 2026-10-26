@@ -38,6 +38,13 @@ class ListExpr(Node):
 
 
 @dataclass
+class TupleExpr(Node):
+    """``(a, b)`` / ``(a,)`` — an immutable, hashable sequence."""
+
+    items: List[Node] = field(default_factory=list)
+
+
+@dataclass
 class DictExpr(Node):
     """``{"कुंजी": मान, ...}`` — an ordered map literal."""
 
@@ -76,8 +83,11 @@ class Compare(Node):
 
 @dataclass
 class Call(Node):
+    """``f(a)`` — by name (``callee``) or by arbitrary expression (``target``)."""
+
     callee: str = ""
     args: List[Node] = field(default_factory=list)
+    target: Optional[Node] = None
 
 
 @dataclass
@@ -159,6 +169,14 @@ class TryStmt(Node):
     name: str = "त्रुटि"
     handler: List[Node] = field(default_factory=list)
     final: List[Node] = field(default_factory=list)
+
+
+@dataclass
+class ImportStmt(Node):
+    """``आयात "गणित.सूत्र" [जैसे ग]`` — load another सूत्र module."""
+
+    path: str = ""
+    alias: Optional[str] = None
 
 
 @dataclass

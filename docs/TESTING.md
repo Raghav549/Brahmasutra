@@ -4,12 +4,12 @@
 
 ```bash
 python -m pip install -e ".[dev]" pytest-cov
-pytest -q                                   # 556 tests, ~30 s
+pytest -q                                   # 587 tests, ~34 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools brahma_llm
 ```
 
-Expected result: **556 passed, 0 xfailed**, 93 % statement coverage of the
+Expected result: **587 passed, 0 xfailed**, 93 % statement coverage of the
 engine, `flake8` exit code 0.
 
 ## Layout

@@ -7,6 +7,7 @@ Commands::
     brahma disasm   FILE.sutra|FILE.sbc
     brahma check    FILE.sutra
     brahma repl
+    brahma modules [NAME]     मानक पुस्तकालय के मॉड्यूल
     brahma llm SUBCOMMAND …   (देखें: python -m brahma llm --help)
     brahma version
 
@@ -149,6 +150,34 @@ def cmd_repl(args: argparse.Namespace) -> int:
             return 0
 
 
+def cmd_modules(args: argparse.Namespace) -> int:
+    """List the ``.सूत्र`` standard library, or show one module's exports."""
+    vm = VM(out=None)
+    if not args.name:
+        found = {}
+        for root in vm.stdlib_dirs():
+            if not os.path.isdir(root):
+                continue
+            for entry in sorted(os.listdir(root)):
+                if entry.endswith((".सूत्र", ".sutra")) and entry not in found:
+                    found[entry] = root
+        if not found:
+            print("कोई मानक मॉड्यूल नहीं मिला")
+            return 0
+        for entry, root in sorted(found.items()):
+            print("%-24s %s" % (entry, root))
+        return 0
+    try:
+        exports = vm.load_module(args.name)
+    except BrahmaError as error:
+        _report_error(error)
+        return 1
+    print("%s — %d नाम" % (args.name, len(exports)))
+    for name in sorted(exports):
+        print("  %s" % name)
+    return 0
+
+
 def cmd_llm(args: argparse.Namespace) -> int:
     """Delegate ``brahma llm ...`` to :mod:`brahma_llm.cli`."""
     rest = list(args.rest or [])
@@ -197,6 +226,10 @@ def build_parser() -> argparse.ArgumentParser:
     repl = sub.add_parser("repl", help="इंटरैक्टिव शेल")
     repl.add_argument("--limit", type=int, default=DEFAULT_STEP_LIMIT)
     repl.set_defaults(func=cmd_repl)
+
+    modules = sub.add_parser("modules", help="मानक पुस्तकालय के मॉड्यूल")
+    modules.add_argument("name", nargs="?", help="मॉड्यूल का नाम (जैसे गणित)")
+    modules.set_defaults(func=cmd_modules)
 
     llm = sub.add_parser("llm", help="ब्रह्म-LLM (प्रशिक्षण, लक्ष्य, आत्म-संपादन)")
     llm.add_argument("rest", nargs=argparse.REMAINDER,

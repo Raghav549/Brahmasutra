@@ -1,5 +1,0 @@
-LOAD अ 10
-LOAD ब 20
-ADD अ ब
-SHOW
-END

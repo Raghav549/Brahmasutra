@@ -44,7 +44,10 @@ class Compiler:
             self._statement(statement, code)
 
     def _statement(self, node: ast.Node, code: CodeObject) -> None:
-        if isinstance(node, ast.LetStmt):
+        if isinstance(node, ast.ImportStmt):
+            code.emit("IMPORT", [node.path, node.alias or ""], node.line)
+
+        elif isinstance(node, ast.LetStmt):
             self._expr(node.value, code)
             code.emit("STORE_NAME", node.name, node.line)
 
@@ -273,6 +276,11 @@ class Compiler:
                 self._expr(item, code)
             code.emit("BUILD_LIST", len(node.items), node.line)
 
+        elif isinstance(node, ast.TupleExpr):
+            for item in node.items:
+                self._expr(item, code)
+            code.emit("BUILD_TUPLE", len(node.items), node.line)
+
         elif isinstance(node, ast.DictExpr):
             for key, value in zip(node.keys, node.values):
                 self._expr(key, code)
@@ -297,7 +305,10 @@ class Compiler:
             code.emit("LOAD_SLICE", line=node.line)
 
         elif isinstance(node, ast.Call):
-            code.emit("LOAD_NAME", node.callee, node.line)
+            if node.target is not None:
+                self._expr(node.target, code)
+            else:
+                code.emit("LOAD_NAME", node.callee, node.line)
             for argument in node.args:
                 self._expr(argument, code)
             code.emit("CALL", len(node.args), node.line)

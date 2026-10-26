@@ -278,3 +278,31 @@ class TestInProcess:
         repl = Repl(out=lambda text: None)
         assert repl.handle("   ") is True
         assert repl.buffer == []
+
+
+class TestModules:
+    """``brahma modules`` — the सूत्र standard library (3.6)."""
+
+    def test_lists_stdlib_modules(self):
+        code, stdout, _ = cli("modules")
+        assert code == 0
+        assert "गणित.सूत्र" in stdout
+        assert "पाठ.सूत्र" in stdout
+
+    def test_shows_module_exports(self):
+        code, stdout, _ = cli("modules", "गणित")
+        assert code == 0
+        assert stdout.startswith("गणित — ")
+        assert "अभाज्य" in stdout
+
+    def test_unknown_module_fails(self):
+        code, _, stderr = cli("modules", "नहीं_है")
+        assert code == 1
+        assert "मॉड्यूल नहीं मिला" in stderr
+
+    def test_run_program_that_imports_stdlib(self, tmp_path):
+        path = tmp_path / "मुख्य.सूत्र"
+        path.write_text('आयात "गणित"\nदर्शय वर्ग(9)\n', encoding="utf-8")
+        code, stdout, _ = cli("run", str(path))
+        assert code == 0
+        assert stdout.strip() == "81"

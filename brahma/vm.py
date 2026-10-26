@@ -8,6 +8,7 @@ recursion, a step budget and precise runtime diagnostics.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
@@ -120,6 +121,17 @@ def format_value(value: Any) -> str:
         return repr(value)
     if isinstance(value, list):
         return "[" + ", ".join(format_value(item) for item in value) + "]"
+    if isinstance(value, tuple):
+        inner = ", ".join(format_value(item) for item in value)
+        return "(" + inner + ("," if len(value) == 1 else "") + ")"
+    if isinstance(value, (set, frozenset)):
+        if not value:
+            return "समुच्चय()"
+        try:
+            ordered = sorted(value)
+        except TypeError:
+            ordered = sorted(value, key=format_value)
+        return "{" + ", ".join(format_value(item) for item in ordered) + "}"
     if isinstance(value, dict):
         pairs = ["%s: %s" % (format_value(key), format_value(item))
                  for key, item in value.items()]
@@ -132,8 +144,8 @@ def format_value(value: Any) -> str:
 
 
 def _builtin_len(value: Any) -> int:
-    if not isinstance(value, (str, list, tuple, dict)):
-        raise RuntimeFault("लम्बाई() केवल शब्द/सूची पर लागू है")
+    if not isinstance(value, (str, list, tuple, dict, set, frozenset)):
+        raise RuntimeFault("लम्बाई() केवल शब्द/सूची/टपल/तालिका/समुच्चय पर लागू है")
     return len(value)
 
 
@@ -348,6 +360,8 @@ def _builtin_values(table: Any) -> List[Any]:
 
 
 def _builtin_has(table: Any, key: Any) -> bool:
+    if isinstance(table, (set, frozenset, list, str, tuple)):
+        return key in table
     return key in _need_dict(table, "समाविष्ट")
 
 
@@ -388,6 +402,10 @@ def _builtin_type(value: Any) -> str:
         return "सूची"
     if isinstance(value, dict):
         return "तालिका"
+    if isinstance(value, tuple):
+        return "टपल"
+    if isinstance(value, (set, frozenset)):
+        return "समुच्चय"
     return "अन्य"
 
 
@@ -399,6 +417,51 @@ def _builtin_round(value: Any) -> int:
 
 def _builtin_sorted_join(items: Any) -> str:
     return "".join(format_value(item) for item in _need_list(items, "मिलाओ"))
+
+
+def _builtin_tuple(*items: Any) -> tuple:
+    return tuple(items)
+
+
+def _need_set(value: Any, name: str) -> set:
+    if isinstance(value, (set, frozenset)):
+        return set(value) if isinstance(value, frozenset) else value
+    raise RuntimeFault("%s() को समुच्चय चाहिए, मिला %s" % (name, type(value).__name__))
+
+
+def _builtin_set(values: Any = None) -> set:
+    if values is None:
+        return set()
+    if isinstance(values, (set, frozenset, list, tuple, str)):
+        return set(values)
+    raise RuntimeFault("समुच्चय() को सूची/टपल/शब्द चाहिए, मिला %s" % type(values).__name__)
+
+
+def _builtin_union(left: Any, right: Any) -> set:
+    return _need_set(left, "समुच्चय_संघ") | _need_set(right, "समुच्चय_संघ")
+
+
+def _builtin_intersection(left: Any, right: Any) -> set:
+    return _need_set(left, "समुच्चय_छेद") & _need_set(right, "समुच्चय_छेद")
+
+
+def _builtin_difference(left: Any, right: Any) -> set:
+    return _need_set(left, "समुच्चय_अंतर") - _need_set(right, "समुच्चय_अंतर")
+
+
+def _builtin_set_add(items: Any, value: Any) -> set:
+    target = _need_set(items, "समुच्चय_जोड़ो")
+    try:
+        target.add(value)
+    except TypeError:
+        raise RuntimeFault("समुच्चय में केवल अपरिवर्तनीय मान जोड़े जा सकते हैं")
+    return target
+
+
+def _builtin_set_discard(items: Any, value: Any) -> set:
+    target = _need_set(items, "समुच्चय_हटाओ")
+    target.discard(value)
+    return target
 
 
 #: The standard library exposed to every program.
@@ -447,6 +510,13 @@ _register(("वर्गमूल", "sqrt"), _builtin_sqrt, 1, 1)
 _register(("प्रकार", "type"), _builtin_type, 1, 1)
 _register(("गोल", "round"), _builtin_round, 1, 1)
 _register(("मिलाओ", "fuse"), _builtin_sorted_join, 1, 1)
+_register(("टपल", "tuple"), _builtin_tuple, 0, None)
+_register(("समुच्चय", "set"), _builtin_set, 0, 1)
+_register(("समुच्चय_संघ", "union"), _builtin_union, 2, 2)
+_register(("समुच्चय_छेद", "intersection"), _builtin_intersection, 2, 2)
+_register(("समुच्चय_अंतर", "difference"), _builtin_difference, 2, 2)
+_register(("समुच्चय_जोड़ो", "add"), _builtin_set_add, 2, 2)
+_register(("समुच्चय_हटाओ", "discard"), _builtin_set_discard, 2, 2)
 
 
 class VM:
@@ -480,6 +550,8 @@ class VM:
         self.frames: List[Frame] = []
         self.steps = 0
         self._source_name = "<input>"
+        self.modules: Dict[str, Dict[str, Any]] = {}
+        self.loading: List[str] = []
         self._print_builtin = Builtin("दर्शय", self._print_values, 0, None)
 
     def _print_values(self, *args: Any) -> None:
@@ -507,6 +579,73 @@ class VM:
                             (frame.name, frame.last_line) for frame in self.frames
                         ]
                     raise
+
+    # -- modules ---------------------------------------------------------
+    def library_dirs(self) -> List[str]:
+        """Directories searched by ``आयात``, in priority order."""
+        roots: List[str] = []
+        if self._source_name and not self._source_name.startswith("<"):
+            roots.append(os.path.dirname(os.path.abspath(self._source_name)))
+        roots.append(os.getcwd())
+        roots.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
+        for entry in os.environ.get("BRAHMA_PATH", "").split(os.pathsep):
+            if entry:
+                roots.append(entry)
+        return roots
+
+    def stdlib_dirs(self) -> List[str]:
+        """The installed standard library plus any ``BRAHMA_PATH`` entries."""
+        roots = [os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib")]
+        roots.extend(entry for entry in os.environ.get("BRAHMA_PATH", "").split(os.pathsep)
+                     if entry)
+        return roots
+
+    def locate_module(self, path: str, line: int = 0) -> str:
+        """Resolve ``path`` to a readable ``.सूत्र`` file."""
+        candidate = path
+        if not candidate.endswith((".सूत्र", ".sutra")):
+            candidate += ".सूत्र"
+        for root in self.library_dirs():
+            full = os.path.abspath(os.path.join(root, candidate))
+            if os.path.isfile(full):
+                return full
+        raise RuntimeFault("मॉड्यूल नहीं मिला: %s (खोजा: %s)"
+                           % (path, ", ".join(self.library_dirs())), line=line)
+
+    def load_module(self, path: str, line: int = 0) -> Dict[str, Any]:
+        """Compile and run another module once; return its exported globals."""
+        target = self.locate_module(path, line)
+        if target in self.modules:
+            return self.modules[target]
+        if target in self.loading:
+            raise RuntimeFault("चक्रीय आयात: %s" % os.path.basename(target), line=line)
+        from .compiler import compile_source
+        from .errors import BrahmaError
+
+        self.loading.append(target)
+        try:
+            with open(target, "r", encoding="utf-8") as handle:
+                source = handle.read()
+            child = VM(out=self.out, step_limit=self.step_limit, max_depth=self.max_depth)
+            child.modules = self.modules
+            child.loading = self.loading
+            child.run(compile_source(source, source_name=target))
+        except RuntimeFault as fault:
+            raise RuntimeFault("आयात विफल (%s): %s"
+                               % (os.path.basename(target), fault.message), line=line)
+        except BrahmaError as exc:
+            raise RuntimeFault("आयात विफल (%s): %s"
+                               % (os.path.basename(target), exc), line=line)
+        finally:
+            if target in self.loading:
+                self.loading.remove(target)
+
+        exports = {
+            name: value for name, value in child.globals.items()
+            if not name.startswith("_") and name != "दर्शय" and name not in BUILTINS
+        }
+        self.modules[target] = exports
+        return exports
 
     def _recover(self, fault: RuntimeFault) -> bool:
         """Unwind to the innermost ``प्रयास`` handler; ``False`` if none.
@@ -583,6 +722,12 @@ class VM:
                 items.reverse()
                 frame.stack.append(items)
 
+            elif op == "BUILD_TUPLE":
+                count = int(instruction.arg or 0)
+                items = [self._pop(frame, instruction) for _ in range(count)]
+                items.reverse()
+                frame.stack.append(tuple(items))
+
             elif op == "BUILD_DICT":
                 count = int(instruction.arg or 0)
                 pairs = [self._pop(frame, instruction) for _ in range(count * 2)]
@@ -652,6 +797,15 @@ class VM:
 
             elif op == "DECLARE_GLOBAL":
                 frame.global_names.add(instruction.arg)
+
+            elif op == "IMPORT":
+                module_path, alias = instruction.arg
+                exports = self.load_module(module_path, instruction.line)
+                if alias:
+                    frame.locals[alias] = exports
+                else:
+                    for name, value in exports.items():
+                        frame.locals[name] = value
 
             elif op == "RAISE":
                 message = self._pop(frame, instruction)
@@ -884,8 +1038,8 @@ class VM:
 
     @staticmethod
     def _slice(target: Any, start: Any, stop: Any, instruction: Instruction) -> Any:
-        if not isinstance(target, (str, list)):
-            raise RuntimeFault("काट केवल शब्द/सूची पर लागू है", line=instruction.line)
+        if not isinstance(target, (str, list, tuple)):
+            raise RuntimeFault("काट केवल शब्द/सूची/टपल पर लागू है", line=instruction.line)
         VM._bounds(start, stop, instruction)
         return target[start:stop]
 
@@ -922,8 +1076,9 @@ class VM:
             if index not in target:
                 raise RuntimeFault("कुंजी नहीं मिली: %r" % (index,), line=instruction.line)
             return target[index]
-        if not isinstance(target, (str, list)):
-            raise RuntimeFault("केवल शब्द/सूची/तालिका का सूचकांक लिया जा सकता है", line=instruction.line)
+        if not isinstance(target, (str, list, tuple)):
+            raise RuntimeFault("केवल शब्द/सूची/टपल/तालिका का सूचकांक लिया जा सकता है",
+                               line=instruction.line)
         if isinstance(index, bool) or not isinstance(index, int):
             raise RuntimeFault("सूचकांक पूर्णांक होना चाहिए", line=instruction.line)
         length = len(target)

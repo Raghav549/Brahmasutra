@@ -58,6 +58,8 @@ OPCODES: Dict[str, int] = {
     "STORE_SLICE": 26,
     "DECLARE_NONLOCAL": 27,
     "DECLARE_GLOBAL": 28,
+    "BUILD_TUPLE": 29,
+    "IMPORT": 30,
 }
 
 #: Ops whose ``arg`` is a jump target.
@@ -169,6 +171,18 @@ class CodeObject:
             elif instr.op == "BUILD_LIST":
                 if not isinstance(instr.arg, int) or instr.arg < 0:
                     raise BytecodeError("BUILD_LIST का आकार अमान्य", line=instr.line)
+            elif instr.op == "BUILD_TUPLE":
+                if not isinstance(instr.arg, int) or instr.arg < 0:
+                    raise BytecodeError("BUILD_TUPLE का आकार अमान्य", line=instr.line)
+            elif instr.op == "IMPORT":
+                arg = instr.arg
+                if (not isinstance(arg, (list, tuple)) or len(arg) != 2
+                        or not isinstance(arg[0], str) or not isinstance(arg[1], str)):
+                    raise BytecodeError(
+                        "IMPORT का arg [पथ, उपनाम] होना चाहिए", line=instr.line
+                    )
+                if not arg[0]:
+                    raise BytecodeError("IMPORT का पथ खाली है", line=instr.line)
             elif instr.op == "BUILD_DICT":
                 if not isinstance(instr.arg, int) or instr.arg < 0:
                     raise BytecodeError("BUILD_DICT का आकार अमान्य", line=instr.line)

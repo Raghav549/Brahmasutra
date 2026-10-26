@@ -57,6 +57,10 @@ KEYWORDS: Dict[str, str] = {
     "nonlocal": "NONLOCAL",
     "वैश्विक": "GLOBAL",
     "global": "GLOBAL",
+    # modules
+    "आयात": "IMPORT",
+    "import": "IMPORT",
+    "जैसे": "AS",
     # binding
     "स्थापय": "LET",
     "let": "LET",

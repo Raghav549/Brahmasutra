@@ -86,7 +86,7 @@ class TestExampleOutputs:
 
 class TestPublicApi:
     def test_version(self):
-        assert brahma.__version__ == "3.5.0"
+        assert brahma.__version__ == "3.6.0"
 
     def test_execute_captures_output(self):
         result = execute('दर्शय "x"')
@@ -140,7 +140,7 @@ class TestPackaging:
             timeout=60,
         )
         assert completed.returncode == 0
-        assert b"3.5.0" in completed.stdout
+        assert b"3.6.0" in completed.stdout
 
     def test_package_imports_no_side_effects(self):
         completed = subprocess.run(
