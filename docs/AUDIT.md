@@ -1,7 +1,7 @@
 # BRAHMA — पूर्ण परियोजना लेखा-परीक्षा (Full Project Audit)
 
 **Updated:** 2026-10-27 for **3.6.0** — see §11 for the current, re-measured
-state (587 tests, 51 pins, 221 demos, kernel verify). The body of this document
+state (588 tests, 51 pins, 221 demos, kernel verify). The body of this document
 is the original audit of the pre-1.0 tree and is kept unchanged as a record.
 
 **Audited commit:** `27980b8542295c7313afeb46d09805cb9d1bbe07` (`main`, single commit)
@@ -619,18 +619,18 @@ Everything below was re-measured on the 3.6.0 tree, not carried over.
 | Engine (`brahma/`) | 1,474 statements | **3,564 lines**, 31 opcodes |
 | Model + kernel + server (`brahma_llm/`) | — | **4,696 lines** |
 | सूत्र standard library (`brahma/lib/`) | — | **233 lines**, 26 exports |
-| Tests | 0 → 326 | **587**, `tests/` 3,978 lines |
+| Tests | 0 → 326 | **588**, `tests/` 3,978 lines |
 
 ### 11.2 Gates (all re-run for 3.6.0)
 
 | Gate | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **587 passed**, ~34 s |
+| Test suite | `pytest -q` | **588 passed**, ~34 s |
 | Lint | `flake8 brahma brahma_llm tests tools --count` | **0** |
 | Import-time side effects | `tools/harden_imports.py` | **0 files** |
 | Legacy script pins | `tools/legacy_baseline.py --check` | **51 scripts** |
 | Demo sweep | `tools/demo_sweep.py --check` | **221 scripts** — ok=189, server=26, usage=6 |
-| Kernel boot | `brahma llm kernel verify` | **6/6 subsystems, READY**, 10 API functions |
+| Kernel boot | `brahma llm kernel verify` | **7/7 subsystems, READY**, 12 API functions (2 113 steps, 215 241-byte image) |
 | Version | `brahma version` | `BRAHMA 3.6.0` |
 
 The six `usage` demos are *documented* command-line tools that print their usage

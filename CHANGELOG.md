@@ -4,6 +4,55 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.7.0] — 2026-10-27
+
+### Added
+
+* **पृष्ठ — paging, the kernel's seventh subsystem.**  A 16-frame page table in
+  सूत्र with `पृष्ठ_मैप`, `पृष्ठ_हटाओ`, `पृष्ठ_अनुवाद` (translation) and a
+  page-fault counter; mapping the same page twice is refused, and the boot
+  self-test proves a hit, a miss and an unmap.  Two new shell commands use it:
+
+  ```
+  सूत्र-OS> map 5 512
+    मैप: 5 → 512 (2/16 फ़्रेम, दोष 1)
+  सूत्र-OS> page 5
+    5 → 512
+  सूत्र-OS> page 7
+    पृष्ठ दोष: 7 मैप नहीं है (2/16 फ़्रेम, दोष 2)
+  ```
+
+  Boot contract now reports **7/7 subsystems** and **12 exported kernel
+  functions**; the image is 215 241 bytes and boots in 2 113 VM steps.
+* **The largest preset, actually trained** (`brahma`: 1 408 346 parameters,
+  `d_model` 96, hidden 1 536, vocab 410).  Measured, one epoch, this machine:
+  **479.75 s, 47 training texts, held-out perplexity 2 886 590.9**.  That is the
+  honest ceiling here — 1.4 M weights cannot be trained on 47 programs, and the
+  docs say so instead of quoting the parameter count alone.
+* Kernel tests: `7/7`, `12 फलन`, and a shell test for map/translate/fault — **588** total.
+
+### Fixed
+
+* The kernel wrote `/इत्यादि/संस्करण` with a hard-coded version string that had
+  drifted four releases behind the package.  It now carries the real version
+  (`3.7.0`) and a new test reads the file back through the shell, so the drift
+  cannot come back silently.
+
+### Removed
+
+* Five unreferenced root scripts (`CPU_test_v2.py`, `brahma_auto_v4.py` — a
+  byte-identical duplicate of `brahma_auto_v3.py` — `compile_run.py`,
+  `cpu_run.py`, `run_binary.py`).  No tracked file mentions them, and the suite,
+  the legacy baseline and the 221-script demo sweep stay green without them.
+
+### Changed
+
+* `docs/LLM.md` §4: paging row, 7/7 + 12-function boot transcript, page-fault
+  accounting in the "scope, stated plainly" paragraph; §3.1b/§9 carry the
+  measured 1.4 M-parameter row.
+* `docs/AUDIT.md` §11, README and `docs/TESTING.md` re-measured (588 tests,
+  7/7 kernel, 12 API functions).
+
 ## [3.6.0] — 2026-10-27
 
 ### Added
