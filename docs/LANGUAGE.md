@@ -1,6 +1,6 @@
 # BRAHMA भाषा संदर्भ (Language Reference)
 
-Version 1.0.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
+Version 1.1.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
 
 BRAHMA is a small, dynamically typed language whose native vocabulary is
 Sanskrit. Every keyword is available in Devanagari **and** in ASCII, so the
@@ -225,7 +225,7 @@ Runtime guards:
 
 The step budget makes accidental hangs impossible, but it is **not** a security
 sandbox: BRAHMA programs cannot touch the filesystem or network at all, because
-no such builtins exist in 1.0.0.
+no such builtins exist in 1.1.0.
 
 ---
 
@@ -301,7 +301,7 @@ After `pip install brahma-lang`, the same commands are available as `brahma`.
 
 ---
 
-## 10. Known limitations (1.0.0)
+## 10. Known limitations (1.1.0)
 
 Honest list — these are not implemented:
 

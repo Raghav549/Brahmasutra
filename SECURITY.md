@@ -40,7 +40,7 @@ production, and that are disabled in the supported engine:
 * `os.system()` and `subprocess(..., shell=True)` with interpolated strings
   (`ide.py`, `sutra_bhasha_v2.py`, `ब्रह्म_प्रक्रिया_निष्पादन_कोर.py`)
 * an HTTP endpoint that imports a module named by a query parameter
-  (`ब्रह्म_API_निष्पादन_तंत्र.py`; the 1.0.0 rewrite validates routes and returns
+  (`ब्रह्म_API_निष्पादन_तंत्र.py`; the 1.1.0 rewrite validates routes and returns
   structured errors, but module execution remains opt-in)
 * generated applications with a hard-coded administrator password
   (`brahma_auto_v5.py`)

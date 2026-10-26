@@ -4,10 +4,14 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] — 2026-10-26
+## [1.1.0] — 2026-10-26
 
 First release of a working, tested BRAHMA engine, produced by a full audit of
 the previously untested prototype tree (see `docs/AUDIT.md`).
+
+> The `v1.0.0` tag on this repository predates the audit and points at the
+> untested prototype tree. The engine described below is published as `v1.1.0`
+> so that the earlier tag and release stay intact and reproducible.
 
 ### Added
 
