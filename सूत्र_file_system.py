@@ -4,15 +4,8 @@
 
 import os
 
-print("🕉️ सूत्र सञ्चिका प्रणाली सक्रिय")
-print("लिखत: सहायता")
-
 
 मूल = "सूत्र-सञ्चिका"
-
-# root folder create
-if not os.path.exists(मूल):
-    os.mkdir(मूल)
 
 
 def मार्ग(नाम):
@@ -20,112 +13,137 @@ def मार्ग(नाम):
     return os.path.join(मूल, नाम)
 
 
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global f, files, आदेश, नाम, पाठ, भाग
 
-while True:
+    print("🕉️ सूत्र सञ्चिका प्रणाली सक्रिय")
+    print("लिखत: सहायता")
 
-    आदेश = input("सञ्चिका >>> ")
-
-    भाग = आदेश.split()
-
-    if len(भाग) == 0:
-        continue
-
-
-    # निर्गम
-
-    if भाग[0] == "निर्गम":
-
-        print("सञ्चिका प्रणाली समाप्त")
-        break
-
-
-    # सहायता
-
-    elif भाग[0] == "सहायता":
-
-        print("आदेश:")
-        print("निर्माण नाम")
-        print("लेख नाम पाठ")
-        print("पठ नाम")
-        print("सूची")
-        print("विलोप नाम")
-        print("निर्गम")
-
-
-    # create file
-
-    elif भाग[0] == "निर्माण":
-
-        नाम = मार्ग(भाग[1])
-
-        open(नाम, "w").close()
-
-        print("सञ्चिका निर्मित:", भाग[1])
+    # root folder create
+    if not os.path.exists(मूल):
+        os.mkdir(मूल)
 
 
 
-    # write file
+    while True:
 
-    elif भाग[0] == "लेख":
+        आदेश = input("सञ्चिका >>> ")
 
-        नाम = मार्ग(भाग[1])
+        भाग = आदेश.split()
 
-        पाठ = " ".join(भाग[2:])
-
-        with open(नाम, "w", encoding="utf-8") as f:
-            f.write(पाठ)
-
-        print("लेखन सफल")
+        if len(भाग) == 0:
+            continue
 
 
+        # निर्गम
 
-    # read file
+        if भाग[0] == "निर्गम":
 
-    elif भाग[0] == "पठ":
+            print("सञ्चिका प्रणाली समाप्त")
+            break
 
-        नाम = मार्ग(भाग[1])
 
-        if os.path.exists(नाम):
+        # सहायता
 
-            with open(नाम, "r", encoding="utf-8") as f:
+        elif भाग[0] == "सहायता":
 
-                print("पाठ:", f.read())
+            print("आदेश:")
+            print("निर्माण नाम")
+            print("लेख नाम पाठ")
+            print("पठ नाम")
+            print("सूची")
+            print("विलोप नाम")
+            print("निर्गम")
+
+
+        # create file
+
+        elif भाग[0] == "निर्माण":
+
+            नाम = मार्ग(भाग[1])
+
+            open(नाम, "w").close()
+
+            print("सञ्चिका निर्मित:", भाग[1])
+
+
+
+        # write file
+
+        elif भाग[0] == "लेख":
+
+            नाम = मार्ग(भाग[1])
+
+            पाठ = " ".join(भाग[2:])
+
+            with open(नाम, "w", encoding="utf-8") as f:
+                f.write(पाठ)
+
+            print("लेखन सफल")
+
+
+
+        # read file
+
+        elif भाग[0] == "पठ":
+
+            नाम = मार्ग(भाग[1])
+
+            if os.path.exists(नाम):
+
+                with open(नाम, "r", encoding="utf-8") as f:
+
+                    print("पाठ:", f.read())
+
+            else:
+
+                print("त्रुटि: सञ्चिका नहीं")
+
+
+        # list files
+
+        elif भाग[0] == "सूची":
+
+            files = os.listdir(मूल)
+
+            print("सञ्चिकाएँ:")
+
+            for f in files:
+                print("-", f)
+
+
+
+        # delete file
+
+        elif भाग[0] == "विलोप":
+
+            नाम = मार्ग(भाग[1])
+
+            if os.path.exists(नाम):
+
+                os.remove(नाम)
+
+                print("विलोप सफल")
+
+            else:
+
+                print("सञ्चिका नहीं")
+
 
         else:
 
-            print("त्रुटि: सञ्चिका नहीं")
+            print("अज्ञात आदेश")
 
 
-    # list files
-
-    elif भाग[0] == "सूची":
-
-        files = os.listdir(मूल)
-
-        print("सञ्चिकाएँ:")
-
-        for f in files:
-            print("-", f)
-
-
-
-    # delete file
-
-    elif भाग[0] == "विलोप":
-
-        नाम = मार्ग(भाग[1])
-
-        if os.path.exists(नाम):
-
-            os.remove(नाम)
-
-            print("विलोप सफल")
-
-        else:
-
-            print("सञ्चिका नहीं")
-
-
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-
-        print("अज्ञात आदेश")
+        raise SystemExit(_brahma_cli_run(_main))

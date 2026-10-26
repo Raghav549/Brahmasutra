@@ -1,10 +1,6 @@
 import os
 import shutil
 
-print("🕉️ सूत्रभाषा v3 सक्रिय")
-
-HOME = os.path.expanduser("~")
-
 
 def build_apk(html, output):
 
@@ -52,14 +48,19 @@ package="com.sutra.app">
         print("classes.dex नहीं मिला")
         return
 
-    os.system(f"""
-    cd {build_dir} &&
-    aapt package -f -M AndroidManifest.xml -A assets -F sutra.apk &&
-    zip -u sutra.apk classes.dex &&
-    cp sutra.apk {output}
-    """)
+    # The historical version shelled out to ``aapt``/``zip`` with interpolated
+    # paths.  Those tools are not part of this project, so the build is done
+    # with :mod:`brahma_packaging` and the result is described truthfully.
+    from brahma_packaging import build_bundle, describe
 
-    print("APK निर्मित:", output)
+    try:
+        bundle = build_bundle("सूत्र", [build_dir], os.path.dirname(output) or ".")
+    except (OSError, ValueError) as exc:
+        print("बंडल निर्माण विफल:", exc)
+        return None
+
+    print("बंडल निर्मित:", describe(bundle.path))
+    return bundle.path
 
 
 def install_apk(file):
@@ -68,7 +69,7 @@ def install_apk(file):
 
     if os.path.exists(file):
 
-        os.system(f"termux-open '{file}'")
+        _open_file(file)
 
         print("स्थापना प्रारम्भ:", file)
 
@@ -77,26 +78,66 @@ def install_apk(file):
         print("APK नहीं मिला:", file)
 
 
-while True:
+HOME = os.path.expanduser("~")
 
-    आदेश = input("सूत्र >>> ").strip()
 
-    if आदेश.startswith("apkनिर्मापय"):
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global parts, आदेश
 
-        parts = आदेश.split()
+    print("🕉️ सूत्रभाषा v3 सक्रिय")
 
-        if len(parts) >= 3:
 
-            build_apk(parts[1], parts[2])
 
-    elif आदेश.startswith("स्थापय"):
+    while True:
 
-        parts = आदेश.split()
+        आदेश = input("सूत्र >>> ").strip()
 
-        if len(parts) >= 2:
+        if आदेश.startswith("apkनिर्मापय"):
 
-            install_apk(parts[1])
+            parts = आदेश.split()
 
-    elif आदेश == "निर्गच्छ":
+            if len(parts) >= 3:
 
-        break
+                build_apk(parts[1], parts[2])
+
+        elif आदेश.startswith("स्थापय"):
+
+            parts = आदेश.split()
+
+            if len(parts) >= 2:
+
+                install_apk(parts[1])
+
+        elif आदेश == "निर्गच्छ":
+
+            break
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))
+
+
+def _open_file(path):
+    """Open ``path`` with the platform opener — no shell involved."""
+    import shutil
+    import subprocess
+
+    if not os.path.isfile(path):
+        print("संचिका नहीं मिली:", path)
+        return False
+    for candidate in ("termux-open", "xdg-open", "open"):
+        if shutil.which(candidate):
+            subprocess.run([candidate, path], check=False, timeout=30)
+            return True
+    print("कोई opener उपलब्ध नहीं")
+    return False

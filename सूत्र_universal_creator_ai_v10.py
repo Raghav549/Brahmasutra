@@ -3,8 +3,6 @@
 
 import os
 
-print("🕉️ सूत्र Universal Creator AI v10 सक्रिय")
-
 
 class सूत्रUniversalCreatorAIv10:
 
@@ -159,15 +157,35 @@ echo "adb install app/build/outputs/apk/debug/app-debug.apk"
             print("अज्ञात आदेश")
 
 
-# start
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, आदेश
 
-ai = सूत्रUniversalCreatorAIv10()
+    print("🕉️ सूत्र Universal Creator AI v10 सक्रिय")
 
-while True:
 
-    आदेश = input("CreatorAIv10 >>> ")
+    # start
 
-    if आदेश == "निर्गम":
-        break
+    ai = सूत्रUniversalCreatorAIv10()
 
-    ai.निर्माण(आदेश)
+    while True:
+
+        आदेश = input("CreatorAIv10 >>> ")
+
+        if आदेश == "निर्गम":
+            break
+
+        ai.निर्माण(आदेश)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

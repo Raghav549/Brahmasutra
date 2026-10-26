@@ -4,8 +4,6 @@
 import os
 import datetime
 
-print("🕉️ सूत्र Creator AI v13 सक्रिय")
-
 
 class सूत्रCreatorAI:
 
@@ -178,15 +176,35 @@ print("Database ready")
         print("Full Project ready:",name)
 
 
-# START
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, prompt
 
-ai = सूत्रCreatorAI()
+    print("🕉️ सूत्र Creator AI v13 सक्रिय")
 
-while True:
 
-    prompt = input("CreatorAIv13 >>> ")
+    # START
 
-    if prompt == "निर्गम":
-        break
+    ai = सूत्रCreatorAI()
 
-    ai.build(prompt)
+    while True:
+
+        prompt = input("CreatorAIv13 >>> ")
+
+        if prompt == "निर्गम":
+            break
+
+        ai.build(prompt)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

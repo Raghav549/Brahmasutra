@@ -1,13 +1,31 @@
 from सूत्र_kernel_storage_layer import सूत्रKernelStorageLayer
 
 
-storage = सूत्रKernelStorageLayer()
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global storage
 
 
-storage.create("test.txt", "Hello Sanskrit OS")
+    storage = सूत्रKernelStorageLayer()
 
 
-storage.read("test.txt")
+    storage.create("test.txt", "Hello Sanskrit OS")
 
 
-storage.list()
+    storage.read("test.txt")
+
+
+    storage.list()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

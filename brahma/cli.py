@@ -7,6 +7,7 @@ Commands::
     brahma disasm   FILE.sutra|FILE.sbc
     brahma check    FILE.sutra
     brahma repl
+    brahma llm SUBCOMMAND …   (देखें: python -m brahma llm --help)
     brahma version
 
 Exit codes: ``0`` success, ``1`` program error, ``2`` usage error.
@@ -148,6 +149,19 @@ def cmd_repl(args: argparse.Namespace) -> int:
             return 0
 
 
+def cmd_llm(args: argparse.Namespace) -> int:
+    """Delegate ``brahma llm ...`` to :mod:`brahma_llm.cli`."""
+    rest = list(args.rest or [])
+    if rest and rest[0] == "--":
+        rest = rest[1:]
+    try:
+        from brahma_llm.cli import main as llm_main
+    except ImportError:
+        sys.stderr.write("त्रुटि: brahma_llm उपलब्ध नहीं (रिपॉज़िटरी रूट से चलाएँ)\n")
+        return 1
+    return int(llm_main(rest))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="brahma",
@@ -183,6 +197,11 @@ def build_parser() -> argparse.ArgumentParser:
     repl = sub.add_parser("repl", help="इंटरैक्टिव शेल")
     repl.add_argument("--limit", type=int, default=DEFAULT_STEP_LIMIT)
     repl.set_defaults(func=cmd_repl)
+
+    llm = sub.add_parser("llm", help="ब्रह्म-LLM (प्रशिक्षण, लक्ष्य, आत्म-संपादन)")
+    llm.add_argument("rest", nargs=argparse.REMAINDER,
+                     help="उप-आदेश: info/train/generate/autotrain/evolve/kernel/...")
+    llm.set_defaults(func=cmd_llm)
 
     version = sub.add_parser("version", help="संस्करण दिखाएँ")
     version.set_defaults(func=lambda args: (print("BRAHMA %s" % __version__), 0)[1])

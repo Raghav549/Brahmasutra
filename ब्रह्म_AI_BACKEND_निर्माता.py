@@ -2,8 +2,6 @@
 
 import os
 
-print("🕉️ ब्रह्म AI Backend निर्माता सक्रिय")
-
 
 class ब्रह्मBackendनिर्माता:
 
@@ -87,10 +85,24 @@ run()
         return path
 
 
-# test
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global maker
 
-if __name__ == "__main__":
-
+    print("🕉️ ब्रह्म AI Backend निर्माता सक्रिय")
     maker = ब्रह्मBackendनिर्माता()
 
     maker.निर्मित("chat_backend")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

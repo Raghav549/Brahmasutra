@@ -1,19 +1,37 @@
 from सूत्र_app_manager import सूत्रAppManager
 
 
-manager = सूत्रAppManager()
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global manager
 
 
-manager.install("calculator.सूत्रapp")
+    manager = सूत्रAppManager()
 
 
-manager.list_apps()
+    manager.install("calculator.सूत्रapp")
 
 
-manager.run("calculator.सूत्रapp")
+    manager.list_apps()
 
 
-manager.uninstall("calculator.सूत्रapp")
+    manager.run("calculator.सूत्रapp")
 
 
-manager.list_apps()
+    manager.uninstall("calculator.सूत्रapp")
+
+
+    manager.list_apps()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

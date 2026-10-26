@@ -2,7 +2,6 @@
 # सूत्र तंत्र — सूत्र संकलक
 # =========================================
 
-print("🕉️ सूत्र संकलक सक्रिय")
 
 
 # opcode mapping
@@ -62,14 +61,33 @@ def संकलन(इनपुट):
     return आउटपुट
 
 
-इनपुट = input("सूत्र संचिका नाम: ")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global आउटपुट, इनपुट, परिणाम
+    print("🕉️ सूत्र संकलक सक्रिय")
 
-आउटपुट = input("संकलित संचिका नाम (.सूत्रक): ")
+
+    इनपुट = input("सूत्र संचिका नाम: ")
+
+    आउटपुट = input("संकलित संचिका नाम (.सूत्रक): ")
 
 
-परिणाम = संकलन(इनपुट)
+    परिणाम = संकलन(इनपुट)
 
-संचिका_लिखो(आउटपुट, परिणाम)
+    संचिका_लिखो(आउटपुट, परिणाम)
 
 
-print("संकलन पूर्ण:", आउटपुट)
+    print("संकलन पूर्ण:", आउटपुट)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

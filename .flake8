@@ -9,5 +9,5 @@ exclude =
     .venv,
     release,
     # The historical prototype tree predates any style guide and is kept
-    # for provenance only (see docs/AUDIT.md).  CI lints brahma/, tests/ and
-    # tools/ explicitly instead of the whole repository.
+    # for provenance only (see docs/AUDIT.md).  CI lints brahma/, brahma_llm/,
+    # tests/ and tools/ explicitly instead of the whole repository.

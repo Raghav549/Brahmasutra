@@ -1,7 +1,6 @@
 # 🕉️ ब्रह्म कार्यक्रम निष्पादन कोर
 # VERSION 15
 
-print("🕉️ ब्रह्म कार्यक्रम निष्पादन कोर सक्रिय")
 
 import os
 
@@ -52,9 +51,13 @@ class ब्रह्मकार्यक्रमनिष्पादनक�
         print("कार्यक्रम निष्पादन पूर्ण")
 
 
-# TEST
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("🕉️ ब्रह्म कार्यक्रम निष्पादन कोर सक्रिय")
     core = ब्रह्मकार्यक्रमनिष्पादनकोर()
 
     test_file = "परीक्षण.ब्रह्म"
@@ -74,3 +77,7 @@ if __name__ == "__main__":
 """)
 
     core.कार्यक्रम_चलाओ(test_file)
+
+
+if __name__ == "__main__":
+    _main()

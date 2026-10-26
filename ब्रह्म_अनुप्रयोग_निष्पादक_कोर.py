@@ -3,8 +3,6 @@
 
 import os
 
-print("🕉️ ब्रह्म अनुप्रयोग निष्पादक कोर सक्रिय")
-
 
 class ब्रह्मअनुप्रयोगनिष्पादककोर:
 
@@ -94,11 +92,26 @@ class ब्रह्मअनुप्रयोगनिष्पादकक�
         print("अनुप्रयोग निष्पादन पूर्ण")
 
 
-# test
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global executor, test_file
 
+    print("🕉️ ब्रह्म अनुप्रयोग निष्पादक कोर सक्रिय")
     executor = ब्रह्मअनुप्रयोगनिष्पादककोर()
 
     test_file = os.path.expanduser("~/सूत्र-तंत्र/परीक्षण.ब्रह्म")
 
     executor.निष्पादन(test_file)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

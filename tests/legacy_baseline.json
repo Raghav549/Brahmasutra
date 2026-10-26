@@ -69,8 +69,8 @@
       "status": "pass"
     },
     "सूत्र_shell": {
-      "reason": "EOFError: EOF when reading a line",
-      "status": "fail"
+      "reason": "",
+      "status": "pass"
     },
     "सूत्र_shell_v2": {
       "reason": "",
@@ -242,14 +242,14 @@
       "status": "pass"
     },
     "अनुसूचक-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_प्रक्रिया_तंत्र' has no attribute 'प्रक्रियातंत्र'. Did you mean: 'प्रक्रिया_प्रबंधक'?",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "अनुसूचक_परीक्षण.py": {
-      "exit": null,
-      "reason": "केवल 10s में समाप्त नहीं हुआ",
-      "status": "timeout"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "आदेश-परीक्षण.py": {
       "exit": 0,
@@ -257,9 +257,9 @@
       "status": "pass"
     },
     "आह्वान-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_आह्वान_तंत्र' has no attribute 'आह्वानतंत्र'",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "आह्वान_परीक्षण.py": {
       "exit": 0,
@@ -267,9 +267,9 @@
       "status": "pass"
     },
     "उपयोगकर्ता-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_आह्वान_तंत्र' has no attribute 'आह्वानतंत्र'",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "निष्पादन-परीक्षण.py": {
       "exit": 0,
@@ -277,14 +277,14 @@
       "status": "pass"
     },
     "परीक्षण.py": {
-      "exit": null,
-      "reason": "केवल 10s में समाप्त नहीं हुआ",
-      "status": "timeout"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "प्रक्रिया-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_प्रक्रिया_तंत्र' has no attribute 'प्रक्रियातंत्र'. Did you mean: 'प्रक्रिया_प्रबंधक'?",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "प्रक्रिया_test.py": {
       "exit": 0,
@@ -302,14 +302,14 @@
       "status": "pass"
     },
     "यन्त्र-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_यन्त्र_चालक' has no attribute 'यन्त्रचालकतंत्र'",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "यन्त्र_चालक_परीक्षण.py": {
-      "exit": 1,
-      "reason": "EOFError: EOF when reading a line",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "व्याख्या-परीक्षण.py": {
       "exit": 0,
@@ -322,9 +322,9 @@
       "status": "pass"
     },
     "सञ्चिका-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_सञ्चिका_कर्ण' has no attribute 'सञ्चिकातंत्र'",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "सञ्चिका_कर्ण_परीक्षण.py": {
       "exit": 0,
@@ -332,14 +332,14 @@
       "status": "pass"
     },
     "सूत्र_mode_test.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_kernel_mode' has no attribute 'प्रारम्भ'",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "स्मृति-परीक्षण.py": {
-      "exit": 1,
-      "reason": "AttributeError: module 'सूत्र_स्मृति_तंत्र' has no attribute 'स्मृतितंत्र'",
-      "status": "fail"
+      "exit": 0,
+      "reason": "",
+      "status": "pass"
     },
     "स्मृति_परीक्षण.py": {
       "exit": 0,

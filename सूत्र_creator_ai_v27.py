@@ -4,8 +4,6 @@ import subprocess
 import random
 import time
 
-print("🕉️ सूत्र Universal Creator AI v27 सक्रिय")
-
 
 class सूत्रCreatorAIv27:
 
@@ -195,17 +193,37 @@ android:exported="true">
         print("App ready:", name)
 
 
-ai = सूत्रCreatorAIv27()
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global ai, cmd
 
-while True:
+    print("🕉️ सूत्र Universal Creator AI v27 सक्रिय")
 
-    cmd = input("CreatorAIv27 >>> ")
 
-    if cmd == "निर्गम":
-        break
+    ai = सूत्रCreatorAIv27()
 
-    if cmd.startswith("create"):
-        ai.create(cmd)
+    while True:
 
+        cmd = input("CreatorAIv27 >>> ")
+
+        if cmd == "निर्गम":
+            break
+
+        if cmd.startswith("create"):
+            ai.create(cmd)
+
+        else:
+            print("Unknown command")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-        print("Unknown command")
+        raise SystemExit(_brahma_cli_run(_main))

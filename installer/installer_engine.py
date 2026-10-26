@@ -1,8 +1,6 @@
 import os
 import shutil
 
-INSTALL_PATH = os.path.expanduser("~/सूत्र-सिस्टम")
-
 FILES = [
     "engine",
     "compiler",
@@ -28,5 +26,24 @@ def install():
 
     print("पूर्ण स्थापना सफल")
 
-if __name__ == "__main__":
+
+INSTALL_PATH = os.path.expanduser("~/सूत्र-सिस्टम")
+
+
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+
     install()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

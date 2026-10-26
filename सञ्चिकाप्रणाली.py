@@ -1,7 +1,6 @@
 # सूत्र तंत्र — सञ्चिका प्रणाली
 # Sanskrit File System
 
-print("सञ्चिका प्रणाली आरम्भ")
 
 # file storage
 सञ्चिकाएँ = {}
@@ -73,18 +72,36 @@ def सञ्चिका_सूची():
         print("-", नाम)
 
 
-# TEST
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("सञ्चिका प्रणाली आरम्भ")
 
-सञ्चिका_निर्माण("test.txt")
 
-सञ्चिका_लिखो("test.txt", "नमस्ते सूत्र")
+    # TEST
 
-सञ्चिका_पढ़ो("test.txt")
+    सञ्चिका_निर्माण("test.txt")
 
-सञ्चिका_सूची()
+    सञ्चिका_लिखो("test.txt", "नमस्ते सूत्र")
 
-सञ्चिका_मिटाओ("test.txt")
+    सञ्चिका_पढ़ो("test.txt")
 
-सञ्चिका_सूची()
+    सञ्चिका_सूची()
 
-print("सञ्चिका प्रणाली सक्रिय")
+    सञ्चिका_मिटाओ("test.txt")
+
+    सञ्चिका_सूची()
+
+    print("सञ्चिका प्रणाली सक्रिय")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

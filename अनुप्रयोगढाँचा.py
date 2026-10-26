@@ -1,7 +1,6 @@
 # सूत्र तंत्र — अनुप्रयोग ढाँचा
 # Sanskrit Application Framework
 
-print("अनुप्रयोग ढाँचा आरम्भ")
 
 # app registry
 अनुप्रयोगसूची = {}
@@ -84,25 +83,43 @@ def नमस्ते():
     print("नमस्ते अनुप्रयोग सक्रिय")
 
 
-
-# register example apps
-अनुप्रयोग_पंजीकरण("गणक", गणक)
-
-अनुप्रयोग_पंजीकरण("नमस्ते", नमस्ते)
-
-
-
-# test
-अनुप्रयोग_सूची()
-
-अनुप्रयोग_चलाओ("गणक")
-
-अनुप्रयोग_समाप्त()
-
-अनुप्रयोग_चलाओ("नमस्ते")
-
-अनुप्रयोग_समाप्त()
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("अनुप्रयोग ढाँचा आरम्भ")
 
 
 
-print("अनुप्रयोग ढाँचा सक्रिय")
+    # register example apps
+    अनुप्रयोग_पंजीकरण("गणक", गणक)
+
+    अनुप्रयोग_पंजीकरण("नमस्ते", नमस्ते)
+
+
+
+    # test
+    अनुप्रयोग_सूची()
+
+    अनुप्रयोग_चलाओ("गणक")
+
+    अनुप्रयोग_समाप्त()
+
+    अनुप्रयोग_चलाओ("नमस्ते")
+
+    अनुप्रयोग_समाप्त()
+
+
+
+    print("अनुप्रयोग ढाँचा सक्रिय")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

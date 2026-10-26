@@ -87,12 +87,24 @@ class सूत्रRAM:
             print(i,":",self.स्मृति[i])
 
 
-# test
-
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global base, ram
     ram = सूत्रRAM()
 
     base = ram.कार्यक्रम_लोड("test.यन्त्र")
 
     ram.दिखाओ(base, base+10)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

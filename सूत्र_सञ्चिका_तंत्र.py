@@ -28,3 +28,16 @@ class सूत्रसञ्चिका:
         print("सञ्चिका पठन:", नाम)
 
         return self.सञ्चिका.get(नाम,"")
+
+
+#: shared file-system service, created on first use.
+सञ्चिका_प्रबंधक = None
+
+
+def प्रारम्भ():
+    """Activate (and return) the shared सञ्चिका service."""
+    global सञ्चिका_प्रबंधक
+    if सञ्चिका_प्रबंधक is None:
+        सञ्चिका_प्रबंधक = सूत्रसञ्चिका()
+    print("🕉️ सूत्र सञ्चिका तंत्र सक्रिय")
+    return सञ्चिका_प्रबंधक

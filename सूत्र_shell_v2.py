@@ -1,9 +1,19 @@
 # 🕉️ सूत्र शेल v2 — पूर्ण स्वदेशी शेल
 
 
-def प्रारम्भ():
+def प्रारम्भ(interactive=None):
+    """Start the shell; without a terminal it reports ready instead of blocking."""
+
+    import sys
 
     print("🕉️ सूत्र शेल v2 सक्रिय")
+
+    if interactive is None:
+        interactive = bool(sys.stdin and sys.stdin.isatty())
+
+    if not interactive:
+        print("🕉️ शेल तैयार (इंटरैक्टिव नहीं)")
+        return None
 
     while True:
 

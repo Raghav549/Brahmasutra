@@ -29,8 +29,26 @@ class BrahmaHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 
-server = HTTPServer(("0.0.0.0", PORT), BrahmaHandler)
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global server
 
-print("🕉️ BRAHMA BACKEND RUNNING:", PORT)
 
-server.serve_forever()
+    server = HTTPServer(("0.0.0.0", PORT), BrahmaHandler)
+
+    print("🕉️ BRAHMA BACKEND RUNNING:", PORT)
+
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

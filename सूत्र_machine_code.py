@@ -57,3 +57,7 @@ class सूत्रMachineCode:
             machine.append([opcode, op1, op2])
 
         return machine
+
+
+# Compatibility alias — ``compile_run.py`` imports this name.
+सूत्रMachineCodeGenerator = सूत्रMachineCode

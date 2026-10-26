@@ -1,7 +1,6 @@
 # सूत्र तंत्र — मूल कर्नेल
 # Sanskrit Native Kernel
 
-print("मूल कर्नेल आरम्भ")
 
 
 
@@ -91,21 +90,39 @@ def सञ्चिका():
     print("सञ्चिका मॉड्यूल सक्रिय")
 
 
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("मूल कर्नेल आरम्भ")
 
-# register modules
-मॉड्यूल_पंजीकरण("स्मृति", स्मृति)
-मॉड्यूल_पंजीकरण("प्रक्रिया", प्रक्रिया)
-मॉड्यूल_पंजीकरण("सञ्चिका", सञ्चिका)
+
+
+    # register modules
+    मॉड्यूल_पंजीकरण("स्मृति", स्मृति)
+    मॉड्यूल_पंजीकरण("प्रक्रिया", प्रक्रिया)
+    मॉड्यूल_पंजीकरण("सञ्चिका", सञ्चिका)
 
 
 
-# boot kernel
-कर्नेल_स्थिति()
+    # boot kernel
+    कर्नेल_स्थिति()
 
-कर्नेल_प्रज्वलन()
+    कर्नेल_प्रज्वलन()
 
-कर्नेल_स्थिति()
+    कर्नेल_स्थिति()
 
-कर्नेल_समाप्त()
+    कर्नेल_समाप्त()
 
-कर्नेल_स्थिति()
+    कर्नेल_स्थिति()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

@@ -2,8 +2,6 @@
 # सूत्र पूर्ण स्वतंत्र प्रोग्रामिंग भाषा
 # =========================================
 
-print("🕉️ सूत्र भाषा सक्रिय")
-print("निर्गम लिखकर बाहर जाएँ")
 
 
 # स्मृति
@@ -100,15 +98,35 @@ def आदेश_चलाओ(पंक्ति):
         print("अज्ञात आदेश")
 
 
-while True:
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global पंक्ति
+    print("🕉️ सूत्र भाषा सक्रिय")
+    print("निर्गम लिखकर बाहर जाएँ")
 
-    पंक्ति = input("सूत्र >>> ")
 
-    if पंक्ति == "निर्गम":
+    while True:
 
-        print("सूत्र भाषा बन्द")
+        पंक्ति = input("सूत्र >>> ")
 
-        break
+        if पंक्ति == "निर्गम":
+
+            print("सूत्र भाषा बन्द")
+
+            break
 
 
-    आदेश_चलाओ(पंक्ति)
+        आदेश_चलाओ(पंक्ति)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

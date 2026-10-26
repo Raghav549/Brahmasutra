@@ -1,6 +1,27 @@
+"""🕉️ सूत्र स्वायत्त कृत्रिमबुद्धि — a demo loop that "decides" what to do next.
+
+Honest scope: the decisions are ``random.choice`` over three strings; nothing
+here learns.  What it *does* do is exercise the module/counter pipeline, and it
+writes its generated modules into the data directory (``BRAHMA_HOME`` or
+``~/सूत्र-तंत्र``) instead of the current working directory, so running a demo
+can no longer litter your checkout.
+"""
+
 import os
 import random
+import sys
 import time
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.dirname(_HERE)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from brahma_paths import data_root  # noqa: E402
+
+def output_dir() -> str:
+    """Where generated ``स्वायत्त_NNNN.py`` modules go (created on first use)."""
+    return data_root("स्वायत्त_मॉड्यूल", create=True)
 
 
 class सूत्रस्वायत्तकृत्रिमबुद्धि:
@@ -28,11 +49,11 @@ class सूत्रस्वायत्तकृत्रिमबुद्�
 
         नाम = "स्वायत्त_" + str(random.randint(1000,9999))
 
-        with open(नाम + ".py","w",encoding="utf-8") as f:
+        with open(os.path.join(output_dir(), नाम + ".py"),"w",encoding="utf-8") as f:
 
             f.write(f'print("स्वायत्त मॉड्यूल: {नाम}")')
 
-        print("मॉड्यूल निर्मित:", नाम)
+        print("मॉड्यूल निर्मित:", os.path.join(output_dir(), नाम + ".py"))
 
 
     def उन्नयन(self):
@@ -97,3 +118,16 @@ class सूत्रस्वायत्तकृत्रिमबुद्�
         self.सक्रिय = False
 
         print("AI बन्द")
+
+
+def main():
+    """One demo cycle, then exit (the old ``प्रारम्भ`` looped forever)."""
+    ai = सूत्रस्वायत्तकृत्रिमबुद्धि()
+    for _ in range(3):
+        ai.चक्र()
+    ai.बन्द()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

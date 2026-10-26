@@ -2,8 +2,6 @@ from ब्रह्म_कोर import ब्रह्मकोर
 from ब्रह्म_विश्लेषण import ब्रह्मविश्लेषक
 from ब्रह्म_निर्माता import ब्रह्मनिर्माता
 
-print("🕉️ ब्रह्म प्रवेश प्रणाली प्रारम्भ")
-
 
 class ब्रह्मप्रवेश:
 
@@ -56,8 +54,24 @@ class ब्रह्मप्रवेश:
         print("संग्रहीत:", प्रवेश)
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global प्रणाली
 
+    print("🕉️ ब्रह्म प्रवेश प्रणाली प्रारम्भ")
     प्रणाली = ब्रह्मप्रवेश()
 
     प्रणाली.प्रवेश_ग्रहण()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

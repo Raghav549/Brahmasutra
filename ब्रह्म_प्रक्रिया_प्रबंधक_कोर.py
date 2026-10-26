@@ -7,9 +7,6 @@ import threading
 from ब्रह्म_Runtime_कोर import ब्रह्मRuntimeकोर
 
 
-print("🕉️ ब्रह्म प्रक्रिया प्रबंधक कोर सक्रिय")
-
-
 class ब्रह्मप्रक्रिया:
 
     def __init__(self, pid, अनुप्रयोग):
@@ -113,9 +110,16 @@ class ब्रह्मप्रक्रियाप्रबंधकको�
             print("त्रुटि: PID नहीं मिला")
 
 
-# test
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global manager, pid
 
+
+    print("🕉️ ब्रह्म प्रक्रिया प्रबंधक कोर सक्रिय")
     manager = ब्रह्मप्रक्रियाप्रबंधककोर()
 
     pid = manager.निर्माण("परीक्षण.ब्रह्म")
@@ -125,3 +129,12 @@ if __name__ == "__main__":
     manager.प्रारम्भ(pid)
 
     manager.सूची()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

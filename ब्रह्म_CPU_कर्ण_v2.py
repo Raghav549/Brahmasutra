@@ -1,4 +1,3 @@
-print("🕉️ ब्रह्म CPU कर्ण v2 सक्रिय")
 
 
 class ब्रह्मCPU:
@@ -99,3 +98,21 @@ class ब्रह्मCPU:
 
 
         print("CPU समाप्त")
+
+
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("🕉️ ब्रह्म CPU कर्ण v2 सक्रिय")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

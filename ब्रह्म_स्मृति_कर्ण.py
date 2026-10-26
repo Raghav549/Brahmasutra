@@ -1,4 +1,3 @@
-print("🕉️ ब्रह्म स्मृति कर्ण सक्रिय")
 
 class ब्रह्मस्मृतिकर्ण:
 
@@ -53,9 +52,14 @@ class ब्रह्मस्मृतिकर्ण:
             print(पता, "=", मान)
 
 
-
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global p1, p2, ram
+    print("🕉️ ब्रह्म स्मृति कर्ण सक्रिय")
     ram = ब्रह्मस्मृतिकर्ण()
 
     p1 = ram.आवंटन(100)
@@ -67,3 +71,12 @@ if __name__ == "__main__":
     ram.पठन(p1)
 
     ram.स्थिति()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

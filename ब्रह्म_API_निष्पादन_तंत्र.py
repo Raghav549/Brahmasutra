@@ -101,12 +101,24 @@ class ब्रह्मAPIHandler(BaseHTTPRequestHandler):
         self._send(200, response)
 
 
+class _पुनःप्रयोगयोग्यसर्वर(HTTPServer):
+    """``HTTPServer`` with ``SO_REUSEADDR``.
+
+    Without it, an immediately following run of the same demo fails with
+    ``OSError: [Errno 98] Address already in use`` while the previous socket is
+    still in ``TIME_WAIT`` — which is exactly what happened in the test suite.
+    """
+
+    allow_reuse_address = True
+    daemon_threads = True
+
+
 class ब्रह्मAPIनिष्पादनतंत्र:
     """API सर्वर का प्रबंधक।"""
 
     def __init__(self, port=9100):
         self.port = port
-        self.server = HTTPServer(("0.0.0.0", port), ब्रह्मAPIHandler)
+        self.server = _पुनःप्रयोगयोग्यसर्वर(("0.0.0.0", port), ब्रह्मAPIHandler)
         self.thread = None
         print("🕉️ ब्रह्म API निष्पादन तंत्र सक्रिय")
         print(f"API सर्वर प्रारम्भ: http://localhost:{port}")

@@ -1,6 +1,5 @@
 # सूत्र तंत्र — Desktop Environment
 
-print("सूत्र Desktop आरम्भ")
 
 
 
@@ -62,10 +61,13 @@ def desktop():
     print("सूत्र Desktop सक्रिय")
 
 
-
-# test
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("सूत्र Desktop आरम्भ")
     desktop()
 
     अनुप्रयोग_आरम्भ("calculator")
@@ -77,3 +79,12 @@ if __name__ == "__main__":
     सञ्चिका_निर्माण("test.txt", "नमस्ते सूत्र")
 
     सञ्चिका_पठन("test.txt")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

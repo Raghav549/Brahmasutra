@@ -2,11 +2,9 @@
 
 import os
 
-print("🕉️ ब्रह्म बैकेंड तर्क निर्माता सक्रिय")
+from brahma_templates import write_chat_server
 
-BASE = os.path.expanduser("~/सूत्र-तंत्र/ब्रह्म_AI_APPS")
-
-os.makedirs(BASE, exist_ok=True)
+BASE = os.environ.get("BRAHMA_AI_ROOT") or os.path.expanduser("~/सूत्र-तंत्र/ब्रह्म_AI_अनुप्रयोग")
 
 
 
@@ -20,56 +18,39 @@ class ब्रह्मबैकेंडनिर्माता:
         os.makedirs(path, exist_ok=True)
 
 
-        code = '''
-from flask import Flask, request, jsonify
+        written = write_chat_server(path, name)
 
-app = Flask(__name__)
+        print("Backend logic निर्मित:", written)
 
-users = {}
-
-@app.route("/register", methods=["POST"])
-def register():
-
-    data = request.json
-
-    users[data["username"]] = data["password"]
-
-    return jsonify({"status":"registered"})
+        return written
 
 
-@app.route("/login", methods=["POST"])
-def login():
-
-    data = request.json
-
-    if users.get(data["username"]) == data["password"]:
-
-        return jsonify({"status":"success"})
-
-    return jsonify({"status":"failed"})
+BASE = os.path.expanduser("~/सूत्र-तंत्र/ब्रह्म_AI_APPS")
 
 
-@app.route("/")
-def home():
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global b, name
 
-    return "BRAHMA BACKEND ACTIVE"
-
-
-if __name__ == "__main__":
-
-    app.run(port=5000)
-'''
-
-        open(path+"/server.py","w").write(code)
-
-        print("Backend logic निर्मित:",path)
+    print("🕉️ ब्रह्म बैकेंड तर्क निर्माता सक्रिय")
 
 
-
-if __name__ == "__main__":
-
+    os.makedirs(BASE, exist_ok=True)
     name = input("App name: ")
 
     b = ब्रह्मबैकेंडनिर्माता()
 
     b.निर्मित(name)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

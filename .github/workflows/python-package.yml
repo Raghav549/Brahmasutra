@@ -22,8 +22,8 @@ jobs:
           python-version: "3.11"
       - name: Install linters
         run: python -m pip install --upgrade pip flake8
-      - name: flake8 (engine, tests, tools)
-        run: flake8 brahma tests tools --count --statistics
+      - name: flake8 (engine, LLM, tests, tools)
+        run: flake8 brahma brahma_llm tests tools --count --statistics
       - name: Syntax check every Python file in the repository
         run: |
           python - <<'PY'
@@ -67,6 +67,18 @@ jobs:
           python -m brahma compile examples/फिबोनाची.sutra -o /tmp/fib.sbc
           python -m brahma disasm /tmp/fib.sbc > /dev/null
           python -m brahma run-bytecode /tmp/fib.sbc
+      - name: LLM stack smoke test
+        env:
+          BRAHMA_HOME: /tmp/brahma-ci
+        run: |
+          python -m brahma llm info --json > /tmp/llm-info.json
+          python -m brahma llm sutra-math
+          python -m brahma llm kernel verify
+          python -m brahma llm train --size tiny --epochs 2
+          python -m brahma llm generate "दर्शय" --tokens 8
+          python -m brahma llm autotrain --target "अभाज्य संख्या" --iterations 2 --epochs 2 --json > /tmp/autotrain.json
+          python -c "import json; d=json.load(open('/tmp/autotrain.json')); assert d['programs']['accepted'] >= 1 and d['kernel']['ok'], d"
+          python -m brahma llm build-app --target "योग अनुप्रयोग" --out /tmp/ci-app
 
   legacy-baseline:
     name: Legacy baseline freshness
@@ -78,6 +90,17 @@ jobs:
           python-version: "3.11"
       - name: Every legacy demo must be recorded in the baseline
         run: python tools/legacy_baseline.py --check
+
+  demo-sweep:
+    name: Sub-directory demo sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run every demo script and report failures
+        run: python tools/demo_sweep.py --check --workers 4 --timeout 20
 
   package:
     name: Build & install wheel
@@ -97,6 +120,8 @@ jobs:
           /tmp/venv/bin/pip install dist/*.whl
           /tmp/venv/bin/brahma version
           /tmp/venv/bin/brahma run examples/नमस्ते.sutra
+          cd /tmp && BRAHMA_HOME=/tmp/brahma-wheel /tmp/venv/bin/brahma llm info --json | head -3
+          BRAHMA_HOME=/tmp/brahma-wheel /tmp/venv/bin/brahma llm kernel verify
       - uses: actions/upload-artifact@v4
         with:
           name: brahma-lang-dist

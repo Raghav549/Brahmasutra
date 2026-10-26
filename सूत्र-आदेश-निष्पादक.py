@@ -2,8 +2,6 @@
 # सूत्र तंत्र — आदेश निष्पादक
 # =========================================
 
-print("🕉️ सूत्र आदेश निष्पादक सक्रिय")
-print("आदेश: सहायता")
 
 
 रजिस्टर = {
@@ -92,28 +90,48 @@ def निष्पादय(पंक्ति):
 
 सक्रिय = True
 
-while सक्रिय:
 
-    आदेश = input("सूत्र >>> ")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global आदेश
+    print("🕉️ सूत्र आदेश निष्पादक सक्रिय")
+    print("आदेश: सहायता")
 
-    if आदेश == "निर्गम":
+    while सक्रिय:
 
-        print("निष्पादक बन्द")
+        आदेश = input("सूत्र >>> ")
 
-        break
+        if आदेश == "निर्गम":
 
+            print("निष्पादक बन्द")
 
-    elif आदेश == "सहायता":
-
-        print("उपलब्ध आदेश:")
-        print("स्थापय अ 10")
-        print("योग अ ब")
-        print("घटा अ ब")
-        print("गुण अ ब")
-        print("दर्शय")
-        print("निर्गम")
+            break
 
 
+        elif आदेश == "सहायता":
+
+            print("उपलब्ध आदेश:")
+            print("स्थापय अ 10")
+            print("योग अ ब")
+            print("घटा अ ब")
+            print("गुण अ ब")
+            print("दर्शय")
+            print("निर्गम")
+
+
+        else:
+
+            निष्पादय(आदेश)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-
-        निष्पादय(आदेश)
+        raise SystemExit(_brahma_cli_run(_main))

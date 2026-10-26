@@ -1,7 +1,6 @@
 # सूत्र तंत्र — प्रणाली आह्वान प्रणाली
 # Sanskrit System Call Interface
 
-print("प्रणाली आह्वान प्रणाली आरम्भ")
 
 # system call registry
 आह्वानसूची = {}
@@ -55,19 +54,37 @@ def जोड़(मान):
     return परिणाम
 
 
-
-# register calls
-आह्वान_पंजीकरण("नमस्ते", नमस्ते)
-
-आह्वान_पंजीकरण("जोड़", जोड़)
-
-
-
-# execute calls
-आह्वान_चलाओ("नमस्ते")
-
-आह्वान_चलाओ("जोड़", 5)
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("प्रणाली आह्वान प्रणाली आरम्भ")
 
 
 
-print("प्रणाली आह्वान सक्रिय")
+    # register calls
+    आह्वान_पंजीकरण("नमस्ते", नमस्ते)
+
+    आह्वान_पंजीकरण("जोड़", जोड़)
+
+
+
+    # execute calls
+    आह्वान_चलाओ("नमस्ते")
+
+    आह्वान_चलाओ("जोड़", 5)
+
+
+
+    print("प्रणाली आह्वान सक्रिय")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

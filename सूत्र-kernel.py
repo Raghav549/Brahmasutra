@@ -1,6 +1,5 @@
 # सूत्र तंत्र — Kernel Core
 
-print("सूत्र Kernel आरम्भ")
 
 
 
@@ -68,10 +67,14 @@ def स्मृति_पढ़ो(स्थान):
         print("स्थान रिक्त")
 
 
-
-# test kernel
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global pid1, pid2
+    print("सूत्र Kernel आरम्भ")
     pid1 = प्रक्रिया_निर्माण("calculator")
 
     pid2 = प्रक्रिया_निर्माण("editor")
@@ -81,3 +84,12 @@ if __name__ == "__main__":
     स्मृति_लिखो("A", 100)
 
     स्मृति_पढ़ो("A")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

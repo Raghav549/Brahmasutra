@@ -3,8 +3,6 @@
 
 from सूत्र_वर्ण import वर्णप्रणाली
 
-print("🕉️ सूत्र शब्द प्रणाली सक्रिय")
-
 class शब्दप्रणाली:
 
     def __init__(self):
@@ -26,9 +24,15 @@ class शब्दप्रणाली:
         return True
 
 
-# परीक्षण
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global परीक्षण_सूची, प्रणाली, शब्द
 
+    print("🕉️ सूत्र शब्द प्रणाली सक्रिय")
     प्रणाली = शब्दप्रणाली()
 
     परीक्षण_सूची = [
@@ -53,3 +57,12 @@ if __name__ == "__main__":
         else:
 
             print(शब्द, "अमान्य")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

@@ -1,24 +1,11 @@
 # सूत्र तंत्र — पूर्ण सूत्रभाषा v2
 # Fixed Panini-integrated Sanskrit Programming Language
 
-print("पूर्ण सूत्रभाषा v2 आरम्भ")
 
 
 
 # memory
 चर = {}
-
-
-
-# FULL Sanskrit character set
-वर्ण = set(
-"अआइईउऊऋएऐओऔ"
-"कखगघङचछजझञ"
-"टठडढणतथदधन"
-"पफबभमयरलव"
-"शषसह"
-"ािीुूृेैोौंः्"
-)
 
 
 
@@ -144,6 +131,38 @@ def संवाद():
         पंक्ति_चलाओ(पंक्ति)
 
 
+वर्ण = set(
+"अआइईउऊऋएऐओऔ"
+"कखगघङचछजझञ"
+"टठडढणतथदधन"
+"पफबभमयरलव"
+"शषसह"
+"ािीुूृेैोौंः्"
+)
 
-# start
-संवाद()
+
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("पूर्ण सूत्रभाषा v2 आरम्भ")
+
+
+
+    # FULL Sanskrit character set
+
+
+
+    # start
+    संवाद()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

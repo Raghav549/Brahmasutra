@@ -4,8 +4,6 @@
 
 import sys
 
-print("🕉️ सूत्र संचिका निष्पादक सक्रिय")
-
 
 चर = {}
 
@@ -106,11 +104,30 @@ def संचिका_चलाओ(नाम):
         print("संचिका नहीं मिली")
 
 
-if len(sys.argv) < 2:
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
 
-    print("उपयोग:")
-    print("python सूत्र-चलाओ.py कार्यक्रम.सूत्र")
+    print("🕉️ सूत्र संचिका निष्पादक सक्रिय")
 
-else:
 
-    संचिका_चलाओ(sys.argv[1])
+    if len(sys.argv) < 2:
+
+        print("उपयोग:")
+        print("python सूत्र-चलाओ.py कार्यक्रम.सूत्र")
+
+    else:
+
+        संचिका_चलाओ(sys.argv[1])
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

@@ -1,6 +1,5 @@
 # सूत्र तंत्र — GUI Kernel
 
-print("सूत्र GUI आरम्भ")
 
 
 
@@ -49,10 +48,13 @@ def खिड़की_बंद(नाम):
             print("खिड़की बंद:", नाम)
 
 
-
-# test GUI
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    print("सूत्र GUI आरम्भ")
     खिड़की_निर्माण("editor")
 
     खिड़की_निर्माण("calculator")
@@ -62,3 +64,12 @@ if __name__ == "__main__":
     खिड़की_बंद("editor")
 
     खिड़की_सूची_दर्शय()
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

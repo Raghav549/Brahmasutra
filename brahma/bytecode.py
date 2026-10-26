@@ -16,8 +16,9 @@ bytes) makes compiled programs portable across Python versions and lets
 from __future__ import annotations
 
 import json
+import struct
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .errors import BytecodeError
 
@@ -232,3 +233,40 @@ def _format_arg(arg: Any) -> str:
     if isinstance(arg, str):
         return repr(arg)
     return str(arg)
+
+
+# ---------------------------------------------------------------------------
+# Boot images
+# ---------------------------------------------------------------------------
+#: Signature of a bootable सूत्र-OS image.  Kept here (in the canonical package)
+#: so that ``brahma_bytecode`` and ``brahma_llm.kernel`` cannot drift apart.
+IMAGE_SIGNATURE = b"SUTRAOS"
+IMAGE_VERSION = 1
+
+
+def pack_image(payload: bytes, version: int = IMAGE_VERSION) -> bytes:
+    """Wrap a bytecode payload: signature + version + length + payload."""
+    if not isinstance(payload, (bytes, bytearray)):
+        raise TypeError("image payload बाइट्स होना चाहिए")
+    return b"".join([
+        IMAGE_SIGNATURE,
+        struct.pack(">I", version),
+        struct.pack(">I", len(payload)),
+        bytes(payload),
+    ])
+
+
+def unpack_image(image: bytes) -> Tuple[int, bytes]:
+    """Inverse of :func:`pack_image`; returns ``(version, payload)``."""
+    if not isinstance(image, (bytes, bytearray)):
+        raise TypeError("image बाइट्स होना चाहिए")
+    if not image.startswith(IMAGE_SIGNATURE):
+        raise ValueError("अमान्य image signature")
+    head = len(IMAGE_SIGNATURE)
+    if len(image) < head + 8:
+        raise ValueError("अधूरा image header")
+    version, size = struct.unpack(">II", image[head:head + 8])
+    payload = bytes(image[head + 8:head + 8 + size])
+    if len(payload) != size:
+        raise ValueError("अधूरा image: %d बाइट चाहिए, मिले %d" % (size, len(payload)))
+    return version, payload

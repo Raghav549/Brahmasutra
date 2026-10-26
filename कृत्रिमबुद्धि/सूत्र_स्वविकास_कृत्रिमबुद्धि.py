@@ -1,7 +1,26 @@
 # 🕉️ सूत्र स्वविकास कृत्रिमबुद्धि
 
+"""🕉️ सूत्र स्वविकास कृत्रिमबुद्धि — writes templated modules and bumps a counter.
+
+Honest scope: "self-evolution" here means it emits a two-statement Python file
+and increments ``संस्करण``.  No learning takes place.  Generated files land in
+the data directory (``BRAHMA_HOME`` or ``~/सूत्र-तंत्र``), never in the CWD.
+"""
+
 import os
 import random
+import sys
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.dirname(_HERE)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from brahma_paths import data_root  # noqa: E402
+
+def output_dir() -> str:
+    """Where generated ``मॉड्यूल_NNNN.py`` files go (created on first use)."""
+    return data_root("स्वविकास_मॉड्यूल", create=True)
 
 
 class सूत्रस्वविकासकृत्रिमबुद्धि:
@@ -18,7 +37,7 @@ class सूत्रस्वविकासकृत्रिमबुद्�
 
         नाम = "मॉड्यूल_" + str(random.randint(1000,9999))
 
-        संचिका = नाम + ".py"
+        संचिका = os.path.join(output_dir(), नाम + ".py")
 
         कोड = f'''
 
@@ -75,3 +94,13 @@ def कार्य():
             else:
 
                 print("अमान्य आदेश")
+
+
+def main(argv=None):
+    ai = सूत्रस्वविकासकृत्रिमबुद्धि()
+    ai.विकास()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

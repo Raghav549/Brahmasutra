@@ -3,8 +3,6 @@
 import os
 import json
 
-print("🕉️ ब्रह्म AI Database Engine सक्रिय")
-
 
 class ब्रह्मDatabase:
 
@@ -74,11 +72,15 @@ class ब्रह्मDatabase:
             print(k,"=",v)
 
 
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global db
 
-# test
-
-if __name__ == "__main__":
-
+    print("🕉️ ब्रह्म AI Database Engine सक्रिय")
     db = ब्रह्मDatabase()
 
     db.निर्माण("chat")
@@ -88,3 +90,12 @@ if __name__ == "__main__":
     db.पढ़ो("chat","username")
 
     db.सूची("chat")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

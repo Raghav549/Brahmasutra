@@ -1,5 +1,23 @@
 from सूत्र_पूर्ण_स्वचालित_निर्माता import सूत्रपूर्णस्वचालितनिर्माता
 
-तंत्र = सूत्रपूर्णस्वचालितनिर्माता()
 
-तंत्र.पूर्णनिर्माण("स्वचालित_अनुप्रयोग")
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global तंत्र
+
+    तंत्र = सूत्रपूर्णस्वचालितनिर्माता()
+
+    तंत्र.पूर्णनिर्माण("स्वचालित_अनुप्रयोग")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

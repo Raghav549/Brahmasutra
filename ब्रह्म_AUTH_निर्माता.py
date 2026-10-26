@@ -92,10 +92,13 @@ class ब्रह्मAUTHनिर्माता:
         return False
 
 
-
-# test
-if __name__ == "__main__":
-
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global auth, t
     auth = ब्रह्मAUTHनिर्माता()
 
     print("\n--- परीक्षण ---")
@@ -105,3 +108,12 @@ if __name__ == "__main__":
     auth.प्रवेश("देव", "123")
 
     auth.सत्यापन(t)
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
+    else:
+        raise SystemExit(_brahma_cli_run(_main))

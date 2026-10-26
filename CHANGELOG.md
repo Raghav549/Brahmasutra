@@ -4,6 +4,186 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] — 2026-10-26
+
+**"ब्रह्म-LLM" release.**  The language, the VM, the kernel and the application
+builder are now driven by a language model that lives in this repository, is
+trained from scratch in the standard library, edits its own weights and rebuilds
+its own OS image — with every claim backed by a test or a reproducible command
+(see `docs/LLM.md`).
+
+### Added
+
+* **`brahma_llm` package** — a complete, dependency-free language-model stack:
+  * `tokenizer.py` — akṣara-level, Devanagari-aware tokenizer with reversible
+    decoding and frequency-pruned vocabulary;
+  * `model.py` — `NgramLM` (Jelinek–Mercer) and `NeuralLM` (embedding → tanh →
+    softmax) with **hand-written backpropagation**, Adam, size presets and JSON
+    checkpoints; gradients verified against central differences (2e-11);
+  * `programs.py` — a सूत्र program generator whose candidates are **executed**
+    before they may enter the training corpus, plus repository corpus loading;
+  * `trainer.py` — the target-driven autonomous loop: generate → validate →
+    train → measure → keep-best → grow → stop on threshold/patience/budget;
+  * `selfedit.py` — prediction-preserving weight surgery (grow/prune hidden
+    units), gated OS reinstall, and an audit log of every attempt;
+  * `kernel.py` — the **SUTRAOS** kernel as a सूत्र program: compile → pack
+    (`"SUTRAOS" + version + length + bytecode`) → boot → verify → install;
+  * `sutra_kernel.py` — exp/tanh/softmax/forward-pass written **in सूत्र** and
+    executed on the project VM; equal to the Python path within 8.3e-16;
+  * `app_builder.py` — the app builder, now LLM-driven: model writes the सूत्र
+    logic, the builder runs it, generates a stdlib server + UI, and smoke-tests
+    the HTTP endpoints before reporting success;
+  * `cli.py` — `brahma llm info|corpus|train|generate|complete|chat|autotrain|
+    evolve|kernel|build-app|sutra-math|bench`.
+* **`brahma llm …`** wired into the main CLI (`brahma/cli.py`).
+* **LLM endpoints in `brahma_chat`** — `/llm`, `/llm/generate` and `/llm/run`
+  (the last one compiles and runs posted सूत्र source on the VM, with a
+  20 000-character source cap and a 100 000-step limit).
+* **Real SUTRAOS image format** — `pack_image`/`unpack_image` in
+  `brahma/bytecode.py`, shared by `brahma_bytecode` and `brahma_llm.kernel`.
+* **40 new tests** (`tests/test_llm.py`) — 456 in total.
+
+### Changed
+
+* **`कृत्रिमबुद्धि/सूत्र_अनुप्रयोग_निर्माता.py`** — the old builder wrote a fixed
+  program in a dead opcode dialect and printed "निर्मित"; it now delegates to
+  `brahma_llm.app_builder` and returns a manifest with a passing smoke test.
+* **`कृत्रिमबुद्धि/सूत्र_पूर्ण_स्वचालित_निर्माता.py`** — "compilation" used to
+  copy UTF-8 text to `.सूत्रबिन` and "execution" printed the source; now the
+  सूत्र source is compiled to real bytecode (`.sbc`), executed on the VM and can
+  be disassembled.
+* **`kernel/kernel_engine.py`** — was `exec()`-ing arbitrary files; it is now a
+  real shell for the SUTRAOS kernel (`boot`, `verify`, `run FILE.sutra`,
+  `memory`), and it compiles `.sutra` programs instead of executing Python.
+* **`सूत्र_boot_image_builder.py`** — writes and verifies the real image instead
+  of a 10-byte header around a stray file.
+* **`कृत्रिमबुद्धि/सूत्र_स्वायत्त/स्वविकास_कृत्रिमबुद्धि.py`** — generated modules
+  go to the data directory (`BRAHMA_HOME`) instead of the current working
+  directory, and their demos terminate (they used to loop forever).
+* **Trainer annealing** — warm rounds decay the learning rate (0.6×), which
+  turned an oscillating loop (12.7 → 13.0 → 16.2 perplexity) into a monotone one
+  (10.4 → 9.7 → 9.2 → 9.0).
+
+### Removed
+
+* 13 generated demo files that the self-growing AI demos had dropped into the
+  checkout, plus the committed `कृत्रिमबुद्धि/मॉड्यूल_5287.py`; `.gitignore` now
+  covers them.
+* The `exec()`-based "kernel" and the fake `सूत्र.img` builder.
+
+### Fixed
+
+* **Sub-directory demos: 49 failures → 0.** `tools/demo_sweep.py` (new) runs the
+  264 scripts outside `tests/`, `brahma/` and `brahma_llm/`. Fixed: 17 modules
+  that could not import their own package when executed directly
+  (`vm/`, `runtime/`, `desktop/`, `engine/apk_*`, `ब्रह्म_AI_अनुप्रयोग/*` now add
+  the repository root to `sys.path`), 11 demos that raised `EOFError` or looped
+  forever without a terminal (they use a headless-safe `_इनपुट` that exits after
+  the second EOF), and two programs with working-directory-relative paths
+  (`द्विआधारी/निष्पादन_परीक्षण.py`, `संकलक/संकलक_परीक्षण.py`). Current result:
+  232 ok, 26 servers (blocking by design), 6 usage errors, **0 failures**.
+* `NeuralLM` gradients (verified numerically), Adam state migration across
+  weight surgery, and `shrink_hidden` indexing (`W1` rows are hidden units).
+* `ब्रह्म_API_निष्पादन_तंत्र` now sets `allow_reuse_address`, so a repeat run no
+  longer fails with `Address already in use` while the previous socket sits in
+  `TIME_WAIT`; the legacy baseline was regenerated after that fix (a stale
+  record had captured the collision as a real failure).
+* Import-time side effects in the new demos (data directories are created
+  lazily) — `tools/harden_imports.py` still reports **0** files.
+
+## [1.2.0] — 2026-10-26
+
+**"Fix each and every file" release.**  Every one of the 748 Python files in the
+repository was audited, made import-safe and made to behave honestly; every
+legacy demo now passes.  Nothing in this release is aspirational: each claim
+below is backed by a test or by a reproducible command.
+
+### Added
+
+* **`brahma_web`** — a dependency-free HTTP framework (`App`, `Request`,
+  `Response`, routing with path parameters, JSON in/out, CORS, threaded server,
+  `start()`/`shutdown()` for tests).  Replaces the undeclared Flask dependency.
+* **`brahma_chat`** — one shared chat/authentication backend for the eight demo
+  servers: PBKDF2-HMAC-SHA256 password hashes with per-user salt, tokens from
+  `secrets`, atomic JSON writes, administrator password from
+  `BRAHMA_ADMIN_PASSWORD` (generated and printed once if unset — the hard-coded
+  `admin123` is gone).
+* **`brahma_bytecode`** — a single documented bytecode format plus assembler,
+  disassembler, interpreter and boot-image packer (`SUTRAOS` header).  The five
+  former compilers now all emit this one format, so a compiled `.यन्त्र` file is
+  guaranteed to be executable.
+* **`brahma_ai`** — a real, local n-gram language model (`MarkovModel`: train,
+  generate, perplexity, save/load) and a transparent `PromptRouter` that selects
+  an application template and always reports the rule that fired.
+* **`brahma_cli`** — shared entry-point helper: closed stdin becomes exit code 2
+  with a clear message, Ctrl-C becomes 130, genuine errors still show a
+  traceback.
+* **`brahma_paths`** — one data-root policy (`BRAHMA_HOME`, else `~/सूत्र-तंत्र`)
+  replacing hard-coded Termux paths.
+* **`brahma_packaging`** — honest Android bundles: builds a ZIP archive, states
+  that it is not an APK, and `is_installable_apk()` verifies manifest/DEX
+  signatures so the project can never again label a text file `.apk`.
+* **`brahma_templates`** — self-contained, stdlib-only server templates used by
+  the generators (they may write outside the repository, so they cannot import
+  it).
+* **`tools/harden_imports.py`** — the AST tool used for this pass: classifies
+  import-time side effects, moves only *effects* behind `_main()` (classes,
+  functions and constants stay at module level), verifies behaviour
+  before/after, restores any file it cannot prove equivalent, and supports
+  `--apply`, `--verify`, `--hoist-pure`, `--wrap-main` and `--json`.
+* **90 new tests** (`tests/test_web_stack.py` plus two invariants in
+  `tests/test_legacy.py`) covering the web stack, chat backend, bytecode format,
+  CLI helper, paths, generators, packaging, the AI model, and the rule that no
+  module may have import-time side effects or third-party imports — 416 tests in
+  total.
+
+### Fixed
+
+* **419 files** rewritten: every module that printed, prompted, looped or served
+  on import now exposes `_main()`; importing it is side-effect free.
+  `625` import-time side effects were removed; 735/748 modules load standalone
+  and all 748 import correctly (`brahma/*` are package-relative by design).
+* **All 51 legacy demo scripts pass** (previously 40 passed, 9 failed, 2 hung).
+  The two infinite loops are now bounded (`परीक्षण.py`, `अनुसूचक_परीक्षण.py`),
+  and the shells/repls accept `interactive=False` so boot sequences work
+  headless.
+* **Nine Flask backends replaced** — `chat_app`, `chat_saas`, `chat_admin_saas`,
+  three `..._login_database_api_dashboard` apps and `ब्रह्म_API_स्वचालित_
+  निष्पादन.py` — all now run on the standard library.
+* **Remote-code-execution endpoint closed** in
+  `ब्रह्म_API_स्वचालित_निष्पादन.py`: app names are validated (no separators, no
+  `..`), executions run in a subprocess with a timeout, and the whole endpoint is
+  disabled unless `BRAHMA_ALLOW_EXEC=1`.
+* **Shell injection removed** (`ide.py`, `sutra_bhasha_v2.py`,
+  `sutra_bhasha_v3.py`): `os.system(f"…{user input}…")` → argument vectors via
+  `subprocess`; `eval()` in `द्विआधारी/सूत्र_द्विआधारी_निष्पादक.py` →
+  `ast.literal_eval()`.
+* **`सूत्र_यन्त्र_निष्पादक` / `सूत्र-यन्त्र-संकलक` / `सूत्र_मूल_संकलक` /
+  `सूत्र_संकलक`** agree on one format; the interpreter raises
+  `असेंबली_त्रुटि` instead of `IndexError`.
+* **`सूत्र_binary_loader`** — `load_and_run()` exists (it was called but never
+  defined, so the OS loader crashed), malformed images raise instead of
+  producing nonsense instructions.
+* **`सूत्र_boot_simulator`** builds and verifies its image at run time instead of
+  depending on two stale committed binaries.
+* **`सूत्र_os_loader`**, **`सूत्र_shell_v2/v3`**, **`सूत्र_कर्ण_v2`**,
+  **`सूत्र_प्रक्रिया_तंत्र`**, **`सूत्र_यन्त्र_तंत्र`** provide the names the demos
+  use (`चलाओ`, `प्रारम्भ`, `सूत्रयन्त्र`, `संकलन`), created lazily so importing
+  them stays silent.
+* **12 fake binary artefacts deleted** from git (`*.apk` text files, stale
+  `.bin`/`.यन्त्र`/`.img`); `.gitignore` now covers generated binaries.
+* **Demos that needed input** exit `2` with a one-line explanation instead of an
+  `EOFError` traceback; demos that touch the filesystem use `BRAHMA_HOME`.
+
+### Changed
+
+* `pyproject.toml` now ships the nine support modules as `py-modules` and the
+  `dev` extra includes `build`.
+* Documentation states precisely what is and is not real: the "AI" generators
+  are template engines driven by `brahma_ai.PromptRouter` (with a real n-gram
+  model available), the "APK" builder produces ZIP archives, and the engine
+  remains the supported core.
+
 ## [1.1.0] — 2026-10-26
 
 First release of a working, tested BRAHMA engine, produced by a full audit of

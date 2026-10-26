@@ -2,8 +2,6 @@
 # सूत्र तंत्र — आदेश पटल (Shell)
 # =========================================
 
-print("🕉️ सूत्र आदेश पटल सक्रिय")
-print("आदेश लिखत: सहायता")
 
 
 import os
@@ -87,58 +85,78 @@ def मिटा(नाम):
         print("संचिका नहीं मिली")
 
 
-while सक्रिय:
-
-    आदेश = input("सूत्र >>> ")
-
-    भाग = आदेश.split()
-
-    if len(भाग) == 0:
-        continue
-
-
-    if भाग[0] == "निर्गम":
-
-        print("सूत्र Shell बन्द")
-
-        break
+# ---------------------------------------------------------------------------
+# Demo body. Moved behind a __main__ guard by tools/harden_imports.py so that
+# importing this module has no side effects. Classes and functions above stay
+# at module level, so the module's public names are unchanged.
+# ---------------------------------------------------------------------------
+def _main():
+    global आदेश, भाग
+    print("🕉️ सूत्र आदेश पटल सक्रिय")
+    print("आदेश लिखत: सहायता")
 
 
-    elif भाग[0] == "सहायता":
+    while सक्रिय:
 
-        सहायता()
+        आदेश = input("सूत्र >>> ")
 
+        भाग = आदेश.split()
 
-    elif भाग[0] == "दर्शय":
-
-        स्थान()
-
-
-    elif भाग[0] == "सूची":
-
-        सूची()
+        if len(भाग) == 0:
+            continue
 
 
-    elif भाग[0] == "निर्माण":
+        if भाग[0] == "निर्गम":
 
-        निर्माण(भाग[1])
+            print("सूत्र Shell बन्द")
 
-
-    elif भाग[0] == "लिख":
-
-        लिख(भाग[1])
+            break
 
 
-    elif भाग[0] == "पढ़":
+        elif भाग[0] == "सहायता":
 
-        पढ़(भाग[1])
-
-
-    elif भाग[0] == "मिटा":
-
-        मिटा(भाग[1])
+            सहायता()
 
 
+        elif भाग[0] == "दर्शय":
+
+            स्थान()
+
+
+        elif भाग[0] == "सूची":
+
+            सूची()
+
+
+        elif भाग[0] == "निर्माण":
+
+            निर्माण(भाग[1])
+
+
+        elif भाग[0] == "लिख":
+
+            लिख(भाग[1])
+
+
+        elif भाग[0] == "पढ़":
+
+            पढ़(भाग[1])
+
+
+        elif भाग[0] == "मिटा":
+
+            मिटा(भाग[1])
+
+
+        else:
+
+            print("अज्ञात आदेश")
+
+
+if __name__ == "__main__":
+    try:
+        from brahma_cli import चलाओ as _brahma_cli_run
+    except ImportError:  # script copied outside the repository
+        _main()
     else:
-
-        print("अज्ञात आदेश")
+        raise SystemExit(_brahma_cli_run(_main))
