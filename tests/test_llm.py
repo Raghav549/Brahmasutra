@@ -686,9 +686,9 @@ class TestMission:
         """सुरक्षित_आह्वान अज्ञात syscall को पकड़ता है (3.1)."""
         report = verify()
         assert report["ready"] is True and report["ok"] is True
-        assert any("उपप्रणाली: 6/6 ठीक" in line for line in report["output"])
+        assert any("उपप्रणाली: 7/7 ठीक" in line for line in report["output"])
         assert any("अपवाद: 1 पकड़े" in line for line in report["output"])
-        assert any("कर्नेल API: 10 फलन" in line for line in report["output"])
+        assert any("कर्नेल API: 12 फलन" in line for line in report["output"])
 
     def test_mission_resume_keeps_the_better_checkpoint(self, home, tmp_path):
         """Resume वही चेकपॉइंट रखता है और गिरावट को "सुधार" नहीं कहता।"""
@@ -807,6 +807,18 @@ class TestKernelShell:
         from brahma_llm.shell import KernelShell
 
         assert "नहीं मिली" in KernelShell().command("cat /नहीं/है")["output"][0]
+
+    def test_paging_through_the_shell(self):
+        from brahma_llm.shell import KernelShell
+
+        shell = KernelShell()
+        assert shell.command("page")["output"] == ["  1/16 फ़्रेम, दोष 1"]
+        mapped = shell.command("map 5 512")["output"][0]
+        assert "5 → 512" in mapped and "2/16" in mapped
+        assert shell.command("page 5")["output"] == ["  5 → 512"]
+        fault = shell.command("page 7")["output"][0]
+        assert "पृष्ठ दोष" in fault and "दोष 2" in fault
+        assert "अस्वीकृत" in shell.command("map 5 640")["output"][0]
 
     def test_guarded_syscall_through_the_shell(self):
         from brahma_llm.shell import KernelShell

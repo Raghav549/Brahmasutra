@@ -89,7 +89,7 @@ worst absolute difference between analytic and numeric gradient: 2.35e-11
 | `large` | 32 | 192 | 5 | 384 | 117 312 (trained: 115 287) | 21.7 s / 86.6 |
 | `xlarge` | 48 | 384 | 6 | 512 | 314 240 (trained: 254 919) | 50.3 s / 342.6 |
 | `huge` | 64 | 768 | 8 | 768 | 886 272 (trained: 558 903) | **107.4 s / 3 139.9** |
-| `brahma` | 96 | 1536 | 10 | 1024 | **2 411 008** | **189.3 s / 25 600 162** (1 390 383 params as trained) |
+| `brahma` | 96 | 1536 | 10 | 1024 | **2 411 008** | **189.3 s / 25 600 162** (1 390 383 params as trained, 383-token vocab)<br>re-measured 3.7.0: 1 408 346 params, 410-token vocab, **479.75 s / 2 886 591** |
 
 The `params at cap` column counts embeddings sized for the preset's vocabulary
 **cap**; a real training run sizes the tables for the corpus vocabulary it
@@ -237,7 +237,7 @@ bytecode and wraps it in the documented image format:
 "SUTRAOS" | version (>I) | payload length (>I) | bytecode
 ```
 
-The kernel implements six subsystems, each self-tested at boot, all in सूत्र:
+The kernel implements seven subsystems, each self-tested at boot, all in सूत्र:
 
 | subsystem | what it does |
 |---|---|
@@ -247,18 +247,20 @@ The kernel implements six subsystems, each self-tested at boot, all in सूत
 | **आह्वान** | syscall table (`sys_write`, `sys_read`, `sys_exit`, `sys_fork`, `sys_time`) with per-call counters |
 | **सञ्चिका** | in-memory filesystem with inodes, sizes, create/write/read/list |
 | **व्यवधान** | interrupt counter with source tracking |
+| **पृष्ठ** | page table over 16 frames: map/unmap, address translation, page-fault counter (added in 3.7.0) |
 | **सुरक्षित आह्वान** | guarded syscall path: an unknown syscall is raised, caught with `प्रयास`/`पकड़`, recorded and returned as `{"ok": false}` |
 | **शेल** | `शेल_चलाओ(पंक्ति)` — the command dispatcher, in सूत्र (see §4.2) |
 
 **Scope, stated plainly.**  This is an operating-system *model* that really
 executes on the project's VM, not a kernel that boots on bare metal.  It has a
-single flat address space (an allocator over a 1 024-byte heap, no paging, no
-MMU), cooperative scheduling driven by calls to `अगली_प्रक्रिया()` rather than a
-hardware timer interrupt, an in-memory filesystem that disappears when the
-process ends (no block device), and no privilege separation.  What it does have
-is what an OS course would ask for — allocation, processes, scheduling,
-syscalls, files, interrupts and a shell — implemented in one Sanskrit program
-that compiles to bytecode and boots through a fixed, verified contract.
+1 024-byte heap allocator plus a 16-frame page table (a real table with d000 and
+page-fault accounting, but no MMU behind it), cooperative scheduling driven by
+calls to `अगली_प्रक्रिया()` rather than a hardware timer interrupt, an in-memory
+filesystem that disappears when the process ends (no block device), and no
+privilege separation.  What it does have is what an OS course would ask for —
+allocation, paging, processes, scheduling, syscalls, files, interrupts and a
+shell — implemented in one Sanskrit program that compiles to bytecode and boots
+through a fixed, verified contract.
 
 The boot contract is enforced by `verify()`: banner → self-test line
 `स्व-परीक्षण: ठीक / ठीक` → subsystem summary → `READY`.  `install()` refuses to
@@ -268,21 +270,22 @@ write an image that fails it.
 $ brahma llm kernel verify
 🕉️ सूत्र-OS कर्नेल प्रारम्भ
 स्व-परीक्षण: ठीक / ठीक
-उपप्रणाली: 6/6 ठीक
+उपप्रणाली: 7/7 ठीक
 स्मृति: 352 बाइट, 4 खंड, 0 मुक्त
 प्रक्रियाएँ: 4 (तैयार 3)
 अनुसूचक: 2 चक्र
 आह्वान: 3
 सञ्चिकाएँ: /इत्यादि/संस्करण, /इत्यादि/स्वागत
 व्यवधान: 3 (अंतिम: चक्रिका)
+पृष्ठ: 1/16 फ़्रेम, दोष 1
 अपवाद: 1 पकड़े (अज्ञात syscall 99)
-कर्नेल API: 10 फलन
+कर्नेल API: 12 फलन
 READY
-  चरण: 1873, छवि: 177064 बाइट, स्थिति: ठीक
+  चरण: 2113, छवि: 215241 बाइट, स्थिति: ठीक
 ```
 
-The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of ten callable
-functions (`स्मृति_आवंटन`, `प्रक्रिया_जन्म`, `अनुसूचक` …), i.e. the OS exposes an
+The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of twelve
+callable functions (`स्मृति_आवंटन`, `प्रक्रिया_जन्म`, `पृष्ठ_मैप` …), i.e. the OS exposes an
 API *to programs*, not just a boot banner.  The language had to grow for this:
 dictionaries, slicing, nested index assignment, multi-line bracketed literals
 and — since 3.1 — closures, `प्रयास`/`पकड़` and `$"…{…}…"` interpolation (see
@@ -578,7 +581,8 @@ costs **~2 s at 4.5 k parameters, 21.7 s at 115 k, 50.3 s at 255 k and 107.4 s a
 | 115 287 (`large`) | 21.7 s/epoch, ppl 86.6 | worse: vocabulary outgrew the text |
 | 254 919 (`xlarge`) | 50.3 s/epoch, ppl 342.6 | worse again |
 | 558 903 (`huge`) | 107.4 s/epoch, ppl 3 139.9 | worse still — twice, identically |
-| 1 390 383 (`brahma`, as trained) | **189.3 s/epoch, ppl 25 600 162** | the largest model this box can train in three minutes |
+| 1 390 383 (`brahma`, as trained, 383-token vocab) | 189.3 s/epoch, ppl 25 600 162 | the largest model this box can train in three minutes |
+| 1 408 346 (`brahma`, re-trained for 3.7.0, 410-token vocab) | **479.75 s/epoch, ppl 2 886 591** | still hopeless on 47 programs — and this is the honest ceiling here |
 | 2 411 008 (`brahma` at its vocabulary cap) | instantiated + counted | no corpus for it yet |
 | 10⁹–10¹¹ | not feasible here | needs accelerators, 10¹²+ tokens, months |
 
@@ -628,7 +632,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-587 passed in 34.0 s
+588 passed in 34.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural

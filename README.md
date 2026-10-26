@@ -7,7 +7,7 @@ that writes सूत्र and retrains itself.**
 [![CI](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml/badge.svg)](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-587%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-588%20passing-brightgreen)](tests/)
 
 ```brahma
 कार्य फिब(n)
@@ -56,7 +56,7 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, `बाह्य`/`वैश्विक`, interpolation, slice assignment, tuples, sets, modules + सूत्र standard library, 43 builtins / 88 names) | ✅ **stable**, 587 tests, 93 % coverage |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, `बाह्य`/`वैश्विक`, interpolation, slice assignment, tuples, sets, modules + सूत्र standard library, 43 builtins / 88 names) | ✅ **stable**, 588 tests, 93 % coverage |
 | `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, **सूत्र-OS kernel**, agent (chat·code·run·explain·image) and HTTP server | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
@@ -94,10 +94,11 @@ programs ran, held-out perplexity **10.43 → 8.96 (−14 %)**, hidden layer gro
 32 → 48 with **zero** prediction drift, kernel rebuilt and verified.
 
 The kernel is a real सूत्र program (`brahma_llm/os_kernel.py`): memory allocator,
-process table, round-robin scheduler, syscall table, in-memory filesystem and
-interrupt counter plus a guarded syscall path (the kernel catches its own
-faults with `प्रयास`/`पकड़`), each self-tested at boot — 6/6 subsystems,
-`READY`, and a dictionary of ten callable kernel functions.  Its shell is a
+page table with map/translate and page-fault accounting, process table,
+round-robin scheduler, syscall table, in-memory filesystem and interrupt
+counter plus a guarded syscall path (the kernel catches its own faults with
+`प्रयास`/`पकड़`), each self-tested at boot — 7/7 subsystems, `READY`, and a
+dictionary of twelve callable kernel functions.  Its shell is a
 सूत्र function too (`शेल_चलाओ`), reachable as `brahma llm shell` and as
 `POST /shell`, with live kernel state between commands.  No app builder ships any
 more: the model answers chat, writes and executes सूत्र code, explains code,
@@ -242,7 +243,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 | `brahma/lib/` | the standard library, written in सूत्र (`गणित`, `पाठ`, `सूची`) |
 | `brahma_llm/` | the model, trainer, self-editor, सूत्र-OS kernel, agent, HTTP server |
 | `examples/` | runnable Sanskrit programs |
-| `tests/` | 587 tests, including the legacy regression matrix |
+| `tests/` | 588 tests, including the legacy regression matrix |
 | `docs/LANGUAGE.md` | language reference + bytecode spec |
 | `docs/TESTING.md` | how to run and extend the test suite |
 | `docs/AUDIT.md` | **full project audit** — findings, evidence, roadmap |
@@ -253,7 +254,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 587 passed in ~34 s
+pytest -q                                  # 588 passed in ~34 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered
