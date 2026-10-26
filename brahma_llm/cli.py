@@ -254,6 +254,22 @@ def cmd_build_app(args: argparse.Namespace) -> int:
     return 0 if manifest["logic_runs"] and manifest["smoke"].get("ok") else 1
 
 
+def cmd_mission(args: argparse.Namespace) -> int:
+    from .mission import run_mission
+
+    report = run_mission(args.target, keywords=args.keywords, outdir=args.out,
+                         iterations=args.iterations, epochs=args.epochs, size=args.size,
+                         budget=args.budget, build_app=not args.no_app,
+                         write_os=not args.no_os,
+                         log=(lambda message: None) if args.json else print)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False, indent=1, default=str))
+    else:
+        print("रिपोर्ट: %s" % report["report_path"])
+    ok = report["kernel_verified"] and (not report["app"]["built"] or report["app"]["smoke_ok"])
+    return 0 if ok else 1
+
+
 def cmd_sutra_math(args: argparse.Namespace) -> int:
     from . import sutra_kernel
 
@@ -389,6 +405,19 @@ def build_parser() -> argparse.ArgumentParser:
     build_app.add_argument("--no-smoke", action="store_true")
     build_app.add_argument("--json", action="store_true")
     build_app.set_defaults(func=cmd_build_app)
+
+    mission = sub.add_parser("mission", help="लक्ष्य → प्रशिक्षण → आत्म-संपादन → OS → ऐप")
+    mission.add_argument("--target", required=True)
+    mission.add_argument("--keywords", default="")
+    mission.add_argument("--iterations", type=int, default=2)
+    mission.add_argument("--epochs", type=int, default=2)
+    mission.add_argument("--size", default="tiny", choices=("tiny", "small", "medium", "large"))
+    mission.add_argument("--budget", type=float, default=180.0)
+    mission.add_argument("--out", default=None)
+    mission.add_argument("--no-app", action="store_true")
+    mission.add_argument("--no-os", action="store_true")
+    mission.add_argument("--json", action="store_true")
+    mission.set_defaults(func=cmd_mission)
 
     math = sub.add_parser("sutra-math", help="सूत्र-गणित प्रमाण")
     math.add_argument("--json", action="store_true")

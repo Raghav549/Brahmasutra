@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] — 2026-10-26
+
+### Added
+
+* **`brahma llm mission --target TEXT`** — one command for the whole cycle:
+  autonomous training, body edits, the model **writing its own kernel body**
+  (accepted only if the composed kernel boots; otherwise the shipped kernel is
+  reinstalled and the report says so), and a generated app whose HTTP endpoints
+  are smoke-tested. Everything lands in `$BRAHMA_HOME/mission/mission.json`.
+  Measured: 2.9 s, perplexity 15.313 → 14.006, `origin = model`, app smoke `ok`.
+* 4 mission tests (whole cycle, opt-out flags, boot harness, broken-kernel
+  fallback) — 460 tests in total.
+
+### Fixed
+
+* A generated kernel that fails to compile now produces a **rejected edit**
+  instead of aborting the run (`SelfEditor.try_os` catches compile/boot errors).
+
 ## [2.0.0] — 2026-10-26
 
 **"ब्रह्म-LLM" release.**  The language, the VM, the kernel and the application

@@ -1,6 +1,6 @@
 # 🕉️ ब्रह्म-LLM — a from-scratch trainable language model for सूत्र
 
-**Version 2.0.0.** Everything in this document is executable in this repository
+**Version 2.1.0.** Everything in this document is executable in this repository
 and every number below was measured on the checkout, with the command shown
 next to it. Nothing here downloads weights, and nothing imports `torch`,
 `numpy`, `transformers` or any other ML library: the tokenizer, the models, the
@@ -248,6 +248,27 @@ The loop, in order:
 Everything lands in `$BRAHMA_HOME/llm/`: `best/` (`model.json`,
 `tokenizer.json`, `meta.json`), `report.json`, `self/self_edit_log.json`.
 
+### 6.5 One command for the whole cycle
+
+```bash
+brahma llm mission --target "अभाज्य संख्या जाँच" --iterations 2 --epochs 2 --size tiny
+```
+
+Measured run (2.9 s):
+
+| step | result |
+|---|---|
+| training | 2 rounds, 12/12 programs ran, perplexity 15.313 → **14.006**, hidden 32 → 40 |
+| own OS | the model wrote a kernel body; it booted, so `origin = model`, image installed |
+| app | logic **generated** by the model, ran, `/status` + `/run` smoke tests passed |
+| report | `<BRAHMA_HOME>/mission/mission.json` |
+
+The boot contract is a fixed harness (banner → self-test → *generated body* →
+`READY`), and the acceptance rule is truncation: the longest prefix of the
+model's body that actually boots wins. If no prefix boots, the shipped kernel is
+reinstalled and the report says `origin = shipped-kernel` — the fallback is
+recorded, never hidden.
+
 ---
 
 ## 7. Everything is connected
@@ -303,6 +324,7 @@ brahma llm autotrain --target TEXT [--iterations N] [--epochs N] [--budget S] [-
 brahma llm evolve --body|--os [--extra N] [--json]
 brahma llm kernel build|boot|verify|install|info [--json]
 brahma llm build-app --target TEXT [--out DIR] [--port P] [--json]
+brahma llm mission --target TEXT [--iterations N] [--epochs N] [--no-os] [--no-app] [--json]
 brahma llm sutra-math [--json]
 brahma llm bench [--sizes …] [--epochs N] [--json]
 ```
@@ -359,7 +381,7 @@ can make them), a bigger held-out set, then a larger `--size`.
 
 ```
 $ python -m pytest tests/test_llm.py -q
-40 passed in 3.8 s
+44 passed in 6.3 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural
@@ -368,4 +390,5 @@ gradients vs central differences, training loss decrease, save/load equality,
 install, corrupt-image rejection, generator validity, invalid-program rejection,
 body surgery invariants, editor accept/reject + audit log, the autonomous loop
 (report shape, acceptance rate, budget stop), app-builder smoke tests and the
-CLI wiring (`brahma llm …`).
+CLI wiring (`brahma llm …`) and the one-command mission (whole cycle, honest
+`model`/`shipped-kernel` fallback).

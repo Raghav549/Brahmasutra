@@ -207,8 +207,19 @@ class SelfEditor:
         """Build a kernel image from ``source`` and install it only if it boots."""
         from .kernel import build_image, install, verify
 
-        image = build_image(source)
-        report = verify(image)
+        try:
+            image = build_image(source)
+            report = verify(image)
+        except Exception as error:  # compile/boot failure is a rejected edit, not a crash
+            record = EditRecord(
+                kind="os-kernel",
+                description="कर्नेल पुनर्निर्माण विफल",
+                accepted=False,
+                detail="%s: %s" % (type(error).__name__, error),
+            )
+            self.records.append(record)
+            self.log("  आत्म-संपादन (OS): अस्वीकृत — %s" % record.detail)
+            return record
         record = EditRecord(
             kind="os-kernel",
             description="कर्नेल पुनर्निर्माण (%d बाइट स्रोत)" % len(source),

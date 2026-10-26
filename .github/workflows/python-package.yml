@@ -79,6 +79,8 @@ jobs:
           python -m brahma llm autotrain --target "अभाज्य संख्या" --iterations 2 --epochs 2 --json > /tmp/autotrain.json
           python -c "import json; d=json.load(open('/tmp/autotrain.json')); assert d['programs']['accepted'] >= 1 and d['kernel']['ok'], d"
           python -m brahma llm build-app --target "योग अनुप्रयोग" --out /tmp/ci-app
+          python -m brahma llm mission --target "अभाज्य संख्या जाँच" --iterations 1 --epochs 1 --size tiny --json > /tmp/mission.json
+          python -c "import json; d=json.load(open('/tmp/mission.json')); assert d['kernel_verified'] and d['training']['programs']['accepted'] >= 1, d; assert d['os']['attempted'] and d['app']['smoke_ok'], d"
 
   legacy-baseline:
     name: Legacy baseline freshness
