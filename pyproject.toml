@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "brahma-lang"
-version = "1.0.0"
+version = "1.1.0"
 description = "BRAHMA — a Sanskrit-native programming language with a bytecode compiler and stack VM"
 readme = "README.md"
 requires-python = ">=3.9"
