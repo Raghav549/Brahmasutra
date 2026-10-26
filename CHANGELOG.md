@@ -29,6 +29,11 @@ Identical seed and identical parameter count within each row, 3 epochs:
 | `tiny` | + 60 generated | **6.941** (−55 %) |
 | `small` | base | 19.687 |
 | `small` | + 300 generated | **4.795** (−76 %) |
+| `xlarge` (2 epochs) | base → + 300 generated | 229.838 → **27.489** (−88 %) |
+
+The `xlarge` row costs 72.6 s → 122.8 s because the corpus grew 3.5×, and its
+parameter count moves slightly (265 311 → 278 734) because the vocabulary grew
+with the new programs.  More data, more time, far better perplexity.
 
 And through the whole mission (tiny, 1 iteration, 2 epochs, same arguments):
 

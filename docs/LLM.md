@@ -142,8 +142,9 @@ Two honest observations that the table makes impossible to hide:
 The autonomous loop can grow its own training set: `ProgramGenerator` writes
 programs that are compiled **and executed** before they are written, and
 `load_corpus()` picks them up from `$BRAHMA_HOME/corpus` on the next training
-run.  Measured here, 3 epochs each, identical seed and identical parameter
-count within a row:
+run.  Measured here, 3 epochs each (2 for `xlarge`, marked in the row), the same
+seed throughout, and the same parameter count within a row except where the new
+data grew the vocabulary:
 
 | size | corpus | texts | chars | perplexity | time |
 |---|---|---|---|---|---|
@@ -151,6 +152,8 @@ count within a row:
 | `tiny` | + 60 generated | 165 | 71 793 | **6.941** (−55 %) | 2.0 s |
 | `small` | base | 117 | 63 522 | 19.687 | 5.5 s |
 | `small` | + 300 generated | 405 | 105 790 | **4.795** (−76 %) | 8.9 s |
+| `xlarge` | base (2 epochs) | 117 | 63 522 | 229.838 | 72.6 s |
+| `xlarge` | + 300 generated (2 epochs) | 405 | 105 790 | **27.489** (−88 %) | 122.8 s |
 
 That is the honest lesson of §9 in one table: on this project the binding
 constraint is *data*, not parameters.  Fifty more valid programs buy more than
