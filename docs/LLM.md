@@ -206,23 +206,27 @@ write an image that fails it.
 $ brahma llm kernel verify
 🕉️ सूत्र-OS कर्नेल प्रारम्भ
 स्व-परीक्षण: ठीक / ठीक
-उपप्रणाली: 5/5 ठीक
+उपप्रणाली: 6/6 ठीक
 स्मृति: 352 बाइट, 4 खंड, 0 मुक्त
 प्रक्रियाएँ: 4 (तैयार 3)
 अनुसूचक: 2 चक्र
-आह्वान: 2
+आह्वान: 3
 सञ्चिकाएँ: /इत्यादि/संस्करण, /इत्यादि/स्वागत
 व्यवधान: 3 (अंतिम: चक्रिका)
-कर्नेल API: 9 फलन
+अपवाद: 1 पकड़े (syscall 99: शून्य से भाग दिया गया)
+कर्नेल API: 10 फलन
 READY
-  चरण: 1723, छवि: 111021 बाइट, स्थिति: ठीक
+  चरण: 1872, छवि: 122928 बाइट, स्थिति: ठीक
 ```
 
-The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of nine callable
+The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of ten callable
 functions (`स्मृति_आवंटन`, `प्रक्रिया_जन्म`, `अनुसूचक` …), i.e. the OS exposes an
 API *to programs*, not just a boot banner.  The language had to grow for this:
-dictionaries, slicing, nested index assignment and multi-line bracketed literals
-(see `docs/LANGUAGE.md`), all added with tests.
+dictionaries, slicing, nested index assignment, multi-line bracketed literals
+and — since 3.1 — closures, `प्रयास`/`पकड़` and `$"…{…}…"` interpolation (see
+`docs/LANGUAGE.md`), all added with tests.  The kernel uses the exception
+support itself: `सुरक्षित_आह्वान` turns an unknown syscall into a caught fault
+and records it.
 
 The shell in `kernel/kernel_engine.py` is a real userland for it — `boot`,
 `verify`, `run FILE.sutra`, `memory`, `exit`. `.sutra` files are **compiled**;
@@ -517,7 +521,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-483 passed in 29.2 s
+508 passed in 30.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural

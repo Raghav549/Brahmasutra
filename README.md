@@ -7,7 +7,7 @@ that writes सूत्र and retrains itself.**
 [![CI](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml/badge.svg)](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-483%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-508%20passing-brightgreen)](tests/)
 
 ```brahma
 कार्य फिब(n)
@@ -56,7 +56,7 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, 40+ builtins) | ✅ **stable**, 483 tests, 93 % coverage |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`, string interpolation, 40+ builtins) | ✅ **stable**, 508 tests, 93 % coverage |
 | `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, **सूत्र-OS kernel**, agent (chat·code·run·explain·image) and HTTP server | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
@@ -91,8 +91,9 @@ programs ran, held-out perplexity **10.43 → 8.96 (−14 %)**, hidden layer gro
 
 The kernel is a real सूत्र program (`brahma_llm/os_kernel.py`): memory allocator,
 process table, round-robin scheduler, syscall table, in-memory filesystem and
-interrupt counter, each self-tested at boot — 5/5 subsystems, `READY`, and a
-dictionary of nine callable kernel functions. No app builder ships any more: the
+interrupt counter plus a guarded syscall path (the kernel catches its own
+faults with `प्रयास`/`पकड़`), each self-tested at boot — 6/6 subsystems,
+`READY`, and a dictionary of ten callable kernel functions. No app builder ships any more: the
 model answers chat, writes and executes सूत्र code, explains code and renders
 images, on one stdlib HTTP server.
 
@@ -232,7 +233,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 483 passed in ~26 s
+pytest -q                                  # 508 passed in ~30 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered

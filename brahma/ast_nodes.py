@@ -138,6 +138,15 @@ class FuncDef(Node):
 
 
 @dataclass
+class TryStmt(Node):
+    """``प्रयास … पकड़ नाम … अन्त`` — run ``body``, bind a fault to ``name``."""
+
+    body: List[Node] = field(default_factory=list)
+    name: str = "त्रुटि"
+    handler: List[Node] = field(default_factory=list)
+
+
+@dataclass
 class ReturnStmt(Node):
     value: Optional[Node] = None
 

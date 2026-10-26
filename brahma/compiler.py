@@ -78,6 +78,9 @@ class Compiler:
         elif isinstance(node, ast.FuncDef):
             self._function(node, code)
 
+        elif isinstance(node, ast.TryStmt):
+            self._try(node, code)
+
         elif isinstance(node, ast.ReturnStmt):
             if self.function is None:
                 raise CompileError("'प्रत्यागमन' कार्य के बाहर", line=node.line)
@@ -131,6 +134,16 @@ class Compiler:
         for index in continues:
             if code.instructions[index].arg is None:  # pragma: no cover - defensive
                 code.instructions[index].arg = start
+
+    def _try(self, node: ast.TryStmt, code: CodeObject) -> None:
+        """``प्रयास`` … ``पकड़`` … — a real handler table, not a macro."""
+        guard = code.emit("TRY", [0, node.name], node.line)
+        self._statements(node.body, code)
+        code.emit("END_TRY", line=node.line)
+        jump_end = code.emit("JUMP", None, node.line)
+        code.instructions[guard].arg[0] = len(code)
+        self._statements(node.handler, code)
+        code.instructions[jump_end].arg = len(code)
 
     def _function(self, node: ast.FuncDef, code: CodeObject) -> None:
         func_code = CodeObject(
