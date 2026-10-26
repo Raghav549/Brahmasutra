@@ -44,6 +44,11 @@ KEYWORDS: Dict[str, str] = {
     "def": "FUNC",
     "प्रत्यागमन": "RETURN",
     "return": "RETURN",
+    # exception handling
+    "प्रयास": "TRY",
+    "try": "TRY",
+    "पकड़": "CATCH",
+    "catch": "CATCH",
     # binding
     "स्थापय": "LET",
     "let": "LET",

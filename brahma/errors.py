@@ -72,9 +72,13 @@ class RuntimeFault(BrahmaError):
         column: Optional[int] = None,
         source_name: Optional[str] = None,
         frames: Optional[list] = None,
+        catchable: bool = True,
     ) -> None:
         super().__init__(message, line=line, column=column, source_name=source_name)
         self.frames = list(frames or [])
+        #: ``False`` for guard-rail faults (step budget, call depth) that a
+        #: ``प्रयास``/``पकड़`` block must not be able to swallow.
+        self.catchable = catchable
 
     def traceback_text(self) -> str:
         """Render a compact stack trace."""

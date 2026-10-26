@@ -19,13 +19,21 @@ DEFAULT_MAX_DEPTH = 500
 
 
 class Function:
-    """A user defined function (a code object bound to a global scope)."""
+    """A user defined function: code plus its captured lexical scope."""
 
-    __slots__ = ("code", "globals")
+    __slots__ = ("code", "globals", "closure")
 
-    def __init__(self, code: CodeObject, globals_: Dict[str, Any]) -> None:
+    def __init__(
+        self,
+        code: CodeObject,
+        globals_: Dict[str, Any],
+        closure: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
         self.code = code
         self.globals = globals_
+        #: Enclosing scopes, innermost first.  Capturing the *live* dicts is
+        #: what makes closures observe later assignments to captured names.
+        self.closure = list(closure or [])
 
     @property
     def name(self) -> str:
@@ -71,6 +79,10 @@ class Frame:
     stack: List[Any] = field(default_factory=list)
     locals: Dict[str, Any] = field(default_factory=dict)
     last_line: int = 0
+    #: Enclosing lexical scopes, innermost first (closures).
+    enclosing: List[Dict[str, Any]] = field(default_factory=list)
+    #: Active ``प्रयास`` guards as ``(handler_ip, stack_depth, name)``.
+    handlers: List[Any] = field(default_factory=list)
 
     @property
     def name(self) -> str:
@@ -477,14 +489,39 @@ class VM:
         main = Frame(code=code, locals=self.globals)
         self.frames = [main]
         self.steps = 0
-        try:
-            return self._execute()
-        except RuntimeFault as fault:
-            if fault.source_name is None:
-                fault.source_name = self._source_name
-            if not fault.frames:
-                fault.frames = [(frame.name, frame.last_line) for frame in self.frames]
-            raise
+        while True:
+            try:
+                return self._execute()
+            except RuntimeFault as fault:
+                if not self._recover(fault):
+                    if fault.source_name is None:
+                        fault.source_name = self._source_name
+                    if not fault.frames:
+                        fault.frames = [
+                            (frame.name, frame.last_line) for frame in self.frames
+                        ]
+                    raise
+
+    def _recover(self, fault: RuntimeFault) -> bool:
+        """Unwind to the innermost ``प्रयास`` handler; ``False`` if none.
+
+        Frames are unwound outermost-first: a fault raised three calls deep is
+        caught by the nearest enclosing handler, exactly like a real language.
+        """
+        if not fault.catchable:
+            return False
+        snapshot = [(frame.name, frame.last_line) for frame in self.frames]
+        while self.frames:
+            frame = self.frames[-1]
+            if frame.handlers:
+                target, depth, name = frame.handlers.pop()
+                del frame.stack[depth:]
+                frame.locals[name] = fault.message
+                frame.ip = target
+                return True
+            self.frames.pop()
+        fault.frames = snapshot or fault.frames
+        return False
 
     # -- execution -------------------------------------------------------
     def _execute(self) -> Any:
@@ -507,6 +544,7 @@ class VM:
                 raise RuntimeFault(
                     "चरण सीमा (%d) पार हो गई — अनन्त चक्र?" % self.step_limit,
                     line=instruction.line,
+                    catchable=False,
                 )
 
             op = instruction.op
@@ -592,7 +630,20 @@ class VM:
                 self._call(frame, instruction)
 
             elif op == "MAKE_FUNCTION":
-                frame.stack.append(Function(instruction.arg, self.globals))
+                frame.stack.append(
+                    Function(instruction.arg, self.globals, [frame.locals] + frame.enclosing)
+                )
+
+            elif op == "TRY":
+                target, handler_name = instruction.arg
+                frame.handlers.append((int(target), len(frame.stack), handler_name))
+
+            elif op == "END_TRY":
+                if not frame.handlers:  # pragma: no cover - compiler guarantees this
+                    raise RuntimeFault(
+                        "'अन्त-प्रयास' का कोई सक्रिय प्रयास नहीं", line=instruction.line
+                    )
+                frame.handlers.pop()
 
             elif op == "RETURN":
                 value = self._pop(frame, instruction)
@@ -625,6 +676,9 @@ class VM:
         name = instruction.arg
         if name in frame.locals:
             return frame.locals[name]
+        for scope in frame.enclosing:
+            if name in scope:
+                return scope[name]
         if name in self.globals:
             return self.globals[name]
         if name in BUILTINS:
@@ -675,10 +729,14 @@ class VM:
                 line=instruction.line,
             )
         if len(self.frames) >= self.max_depth:
-            raise RuntimeFault("आह्वान गहराई सीमा पार", line=instruction.line)
+            raise RuntimeFault(
+                "आह्वान गहराई सीमा पार", line=instruction.line, catchable=False
+            )
 
         local = dict(zip(code.params, args))
-        self.frames.append(Frame(code=code, locals=local))
+        self.frames.append(
+            Frame(code=code, locals=local, enclosing=list(callee.closure))
+        )
 
     # -- operators -------------------------------------------------------
     @staticmethod

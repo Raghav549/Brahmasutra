@@ -1,6 +1,8 @@
 # BRAHMA भाषा संदर्भ (Language Reference)
 
-Version 3.0.0 (grammar extended in 3.0.0: dicts, slices, multi-line literals) — implemented by `brahma/` (lexer → parser → compiler → VM).
+Version 3.1.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
+Grammar history: 3.0.0 added dicts, slices and multi-line literals; 3.1.0 added
+closures, `प्रयास`/`पकड़` exception handling and `$"…{expr}…"` interpolation.
 
 BRAHMA is a small, dynamically typed language whose native vocabulary is
 Sanskrit. Every keyword is available in Devanagari **and** in ASCII, so the
@@ -45,6 +47,19 @@ so `20 / 10` prints `2.0`.
 Single or double quoted, UTF-8, with escapes `\n \t \r \\ \" \' \0 \uXXXX`.
 Strings are immutable sequences; `लम्बाई()` gives their length in code points.
 
+A string prefixed with `$` is **interpolated**: every `{…}` inside it is a
+full expression, converted with `पाठ()` and joined with `+`.
+
+```brahma
+नाम = "ब्रह्म"
+दर्शय $"नमस्ते {नाम}! 2 + 3 = {2 + 3}"
+दर्शय $"ब्रेस {{लिटरल}}"          # literal braces: {{ and }}
+```
+
+A plain string (`"…"`, no `$`) is never interpolated, so JSON literals such as
+`"{\"ok\": true}"` keep their braces.  An unclosed `{`, a stray `}`, an empty
+`{}` or an invalid embedded expression is a **parse error** with a line number.
+
 ### 1.4 Comments
 
 From `#` to end of line.
@@ -83,6 +98,8 @@ arguments are therefore ordinary code:
 | `विराम` | `break` | leave loop |
 | `चल` | `continue` | next iteration |
 | `कार्य` | `func` / `def` | define function |
+| `प्रयास` | `try` | guarded block |
+| `पकड़` | `catch` | bind the fault and handle it |
 | `प्रत्यागमन` | `return` | return from function |
 | `सत्य` | `true` | boolean true |
 | `असत्य` | `false` | boolean false |
@@ -194,12 +211,37 @@ Functions may read globals but cannot rebind them (there is no `global`).
     प्रत्यागमन क + ख
 अन्त
 दर्शय योग(2, 3)
+
+# guarded block
+प्रयास
+    दर्शय 10 / 0
+पकड़ त्रुटि
+    दर्शय "विफल: " + त्रुटि
+अन्त
+
+# closure: the inner function captures `n`
+कार्य वृद्धि(n)
+    कार्य जोड़(x)
+        प्रत्यागमन x + n
+    अन्त
+    प्रत्यागमन जोड़
+अन्त
+जोड़ो = वृद्धि(10)
+दर्शय जोड़ो(5)          # 15
 ```
 
 * `प्रत्यागमन` without a value returns `शून्य`.
 * Falling off the end of a function returns `शून्य`.
 * `विराम`/`चल` outside a loop is a **parse error** (caught before execution).
 * `प्रत्यागमन` outside a function is a parse error.
+* `प्रयास … पकड़ नाम … अन्त`: a fault raised anywhere inside the block — including
+  inside functions it calls — unwinds to the nearest handler, which receives the
+  message in `नाम` as a string; execution then continues after `अन्त`.  Nested
+  blocks bind innermost-first.  The step-budget and call-depth guards are
+  **not** catchable, so a runaway loop cannot be swallowed.
+* `कार्य` bodies are lexically scoped: names are looked up in the current frame,
+  then in each enclosing scope captured at definition time, then in globals.
+  Two closures made by two calls are independent.
 
 ---
 
@@ -254,7 +296,8 @@ Builtins check their argument count and raise a BRAHMA error (not a Python
 Three phases, each with its own error type and source position:
 
 * `LexError` / `ParseError` / `CompileError` — before execution.
-* `RuntimeFault` — during execution, with a call-stack trace.
+* `RuntimeFault` — during execution, with a call-stack trace (or caught by
+  `प्रयास`/`पकड़`, which converts it into a string in the handler variable).
 
 ```
 demo.sutra:4:5: अपरिभाषित नाम 'अ'
@@ -271,7 +314,7 @@ Runtime guards:
 
 The step budget makes accidental hangs impossible, but it is **not** a security
 sandbox: BRAHMA programs cannot touch the filesystem or network at all, because
-no such builtins exist in 3.0.0.
+no such builtins exist in 3.1.0.
 
 ---
 
@@ -323,7 +366,9 @@ raise `BytecodeError` and never execute partially.
 | `JUMP_IF_TRUE` | target | pop, jump when truthy |
 | `CALL` | argc | call function/builtin |
 | `RETURN` | — | return from frame |
-| `MAKE_FUNCTION` | code object | push function value |
+| `MAKE_FUNCTION` | code object | push function value (captures the frame) |
+| `TRY` | `[handler, name]` | push a handler: `(ip, stack depth, name)` |
+| `END_TRY` | — | pop the innermost handler (normal completion) |
 | `PRINT` | — | pop and print |
 | `HALT` | — | stop the program |
 
@@ -347,16 +392,21 @@ After `pip install brahma-lang`, the same commands are available as `brahma`.
 
 ---
 
-## 10. Known limitations (3.0.0)
+## 10. Known limitations (3.1.0)
 
 Honest list — these are not implemented:
 
 * no user-defined classes/objects, no tuples or sets
 * no `import` / module system: a program is a single file
-* no string interpolation (`"$x"`); string building uses `+` and `पाठ()`
-* no language-level exceptions (`try`/`catch`)
+* closures are **read-only**: assigning to a captured name creates a local in
+  the inner function (there is no `nonlocal`/`global` declaration)
 * no slice *assignment* (`x[1:3] = …`); element assignment and slicing reads work
-* no closures; functions see globals read-only
+* no `finally` block and no exception *types* — `पकड़` receives the message
+  string; the step-budget and call-depth guards are intentionally uncatchable
 * no tail-call optimisation, no JIT; the VM is a straightforward interpreter
 * the C VM in `native_vm/` is a **separate**, much smaller prototype and does
-  not implement this specification
+  not implement this specification (it has no `TRY`/`MAKE_FUNCTION` closure
+  support)
+
+The grammar accepted by `brahma/parser.py` is the authoritative one; this
+document describes the same language.

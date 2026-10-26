@@ -4,6 +4,42 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.1.0] — 2026-10-27
+
+### Added
+
+* **Closures.** `कार्य` now captures the scope it was defined in, so inner
+  functions see outer locals; two calls produce independent closures.  Name
+  resolution is frame → captured scopes → globals → builtins.
+* **Exception handling.** `प्रयास … पकड़ नाम … अन्त` with two new opcodes
+  (`TRY`, `END_TRY`) and a per-frame handler table.  Faults raised anywhere in
+  the guarded block — including inside functions it calls — unwind to the
+  nearest handler, which receives the message as a string; execution continues
+  afterwards.  The step-budget and call-depth guards stay **uncatchable**, so a
+  runaway loop can never be swallowed.
+* **String interpolation.** `$"नमस्ते {नाम}! {2 + 3}"` lowers at parse time to a
+  `+` chain over `पाठ()`; `{{`/`}}` are literal braces, and plain strings keep
+  their braces untouched.  Unclosed `{`, stray `}`, empty `{}` and invalid
+  embedded expressions are parse errors with line numbers.
+* 25 new tests (closures 5, try/catch 10, interpolation 9, kernel fault path 1)
+  — **508** total.
+
+### Changed
+
+* `RuntimeFault` gained `catchable` so guard-rail faults can opt out of being
+  caught; the VM's `run()` now retries execution at a handler instead of
+  tearing the interpreter down.
+* Bytecode spec: `OPCODES` 22 (`TRY`) and 23 (`END_TRY`); `validate()` checks the
+  handler target and name, so a corrupted `.sbc` fails loudly.
+* `docs/LANGUAGE.md` §1.3, §2, §5, §7, §8.1 and §10 rewritten for 3.1.0; the
+  "no closures / no try-catch / no interpolation" limitations are gone, and the
+  remaining ones are stated precisely (closures are read-only, no `finally`, no
+  exception types).
+* सूत्र-OS grew a seventh path: `सुरक्षित_आह्वान` wraps the syscall table in
+  `प्रयास`/`पकड़`, so an unknown syscall is caught, recorded (`अपवाद: 1 पकड़े`) and
+  returned as `{"ok": false, …}` instead of aborting the kernel.  API is now ten
+  functions, boot 1 872 steps / 122 928 bytes, 6/6 subsystems.
+
 ## [3.0.0] — 2026-10-27
 
 **"ब्रह्म-LLM is the application" release.**  The app builder is gone.  ब्रह्म
@@ -24,7 +60,7 @@ program; the language gained dictionaries, slicing and 26 builtins.
   its next-token distribution (zlib/struct only; procedural, and labelled so).
 * **सूत्र-OS rewritten** (`brahma_llm/os_kernel.py`): memory allocator, process
   table, round-robin scheduler, syscall table, in-memory filesystem and
-  interrupt handling — 5/5 self-tests, 1 723 steps, a nine-function kernel API
+  interrupt handling — self-tested at boot, 1 872 steps, a ten-function kernel API
   dictionary, booted and verified on the project's VM.
 * **`mission` now ends by serving itself**: the trained model is started on a
   real port and `/status`, `/kernel`, `/chat`, `/run` and `/image` are

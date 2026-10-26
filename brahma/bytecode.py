@@ -51,6 +51,8 @@ OPCODES: Dict[str, int] = {
     "HALT": 19,
     "BUILD_DICT": 20,
     "LOAD_SLICE": 21,
+    "TRY": 22,
+    "END_TRY": 23,
 }
 
 #: Ops whose ``arg`` is a jump target.
@@ -171,6 +173,15 @@ class CodeObject:
                 raise BytecodeError("अमान्य यूनरी ऑपरेटर %r" % (instr.arg,), line=instr.line)
             elif instr.op == "COMPARE" and instr.arg not in COMPARE_OPS:
                 raise BytecodeError("अमान्य तुलना ऑपरेटर %r" % (instr.arg,), line=instr.line)
+            elif instr.op == "TRY":
+                arg = instr.arg
+                if (not isinstance(arg, (list, tuple)) or len(arg) != 2
+                        or not isinstance(arg[0], int) or not isinstance(arg[1], str)):
+                    raise BytecodeError(
+                        "TRY का arg [लक्ष्य, नाम] होना चाहिए", line=instr.line
+                    )
+                if arg[0] < 0 or arg[0] > total:
+                    raise BytecodeError("TRY लक्ष्य सीमा से बाहर", line=instr.line)
             elif instr.op == "MAKE_FUNCTION" and not isinstance(instr.arg, CodeObject):
                 raise BytecodeError("MAKE_FUNCTION को CodeObject चाहिए", line=instr.line)
         return self

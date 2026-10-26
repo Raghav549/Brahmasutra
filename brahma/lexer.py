@@ -91,9 +91,15 @@ class Lexer:
         self.tokens.append(Token(kind, value, line, column, text))
 
     # -- scanners --------------------------------------------------------
-    def _scan_string(self) -> None:
+    def _scan_string(
+        self,
+        line: Optional[int] = None,
+        column: Optional[int] = None,
+        interpolated: bool = False,
+    ) -> None:
         quote = self._peek()
-        line, column = self.line, self.column
+        if line is None:
+            line, column = self.line, self.column
         self._advance()
         chars: List[str] = []
         while True:
@@ -128,7 +134,8 @@ class Lexer:
                 continue
             chars.append(ch)
             self._advance()
-        self._add(TokenKind.STRING, "".join(chars), line, column, quote + quote)
+        prefix = "$" if interpolated else ""
+        self._add(TokenKind.STRING, "".join(chars), line, column, prefix + quote + quote)
 
     def _scan_number(self) -> None:
         line, column = self.line, self.column
@@ -188,6 +195,11 @@ class Lexer:
             if ch == "#":
                 while self._peek() not in ("", "\n"):
                     self._advance()
+                continue
+            if ch == "$" and self._peek(1) in "'\"":
+                line, column = self.line, self.column
+                self._advance()  # the '$' marks an interpolated string
+                self._scan_string(line, column, interpolated=True)
                 continue
             if ch in "'\"":
                 self._scan_string()

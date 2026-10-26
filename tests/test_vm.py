@@ -494,3 +494,225 @@ class TestTablesAndSlices:
             '+ प्रकार([1]) + "/" + प्रकार({}) + "/" + प्रकार(सत्य)'
         )
         assert execute(source).output == ["पूर्णांक/दशमलव/शब्द/सूची/तालिका/बूलियन"]
+
+
+class TestClosures:
+    """``कार्य`` captures its defining scope, not just the globals (3.1)."""
+
+    def test_inner_function_reads_outer_local(self):
+        source = (
+            "कार्य वृद्धि(n)\n"
+            "    कार्य जोड़(x)\n"
+            "        प्रत्यागमन x + n\n"
+            "    अन्त\n"
+            "    प्रत्यागमन जोड़\n"
+            "अन्त\n"
+            "जोड़ो = वृद्धि(10)\n"
+            "दर्शय जोड़ो(5)\n"
+        )
+        assert out(source) == ["15"]
+
+    def test_two_closures_are_independent(self):
+        source = (
+            "कार्य गुणक(n)\n"
+            "    कार्य गुणा(x)\n"
+            "        प्रत्यागमन x * n\n"
+            "    अन्त\n"
+            "    प्रत्यागमन गुणा\n"
+            "अन्त\n"
+            "दो = गुणक(2)\n"
+            "तीन = गुणक(3)\n"
+            "दर्शय दो(7)\n"
+            "दर्शय तीन(7)\n"
+        )
+        assert out(source) == ["14", "21"]
+
+    def test_closure_sees_later_assignment_to_captured_name(self):
+        source = (
+            "कार्य बनाओ()\n"
+            "    गिनती = 1\n"
+            "    कार्य पढ़ो()\n"
+            "        प्रत्यागमन गिनती\n"
+            "    अन्त\n"
+            "    गिनती = 41\n"
+            "    प्रत्यागमन पढ़ो\n"
+            "अन्त\n"
+            "f = बनाओ()\n"
+            "दर्शय f()\n"
+        )
+        assert out(source) == ["41"]
+
+    def test_recursion_is_unaffected(self):
+        source = (
+            "कार्य क्रमगुणित(n)\n"
+            "    यदि n <= 1\n"
+            "        प्रत्यागमन 1\n"
+            "    अन्त\n"
+            "    प्रत्यागमन n * क्रमगुणित(n - 1)\n"
+            "अन्त\n"
+            "दर्शय क्रमगुणित(5)\n"
+        )
+        assert out(source) == ["120"]
+
+    def test_globals_remain_visible(self):
+        source = (
+            "मान = 9\n"
+            "कार्य पढ़ो()\n"
+            "    प्रत्यागमन मान\n"
+            "अन्त\n"
+            "दर्शय पढ़ो()\n"
+        )
+        assert out(source) == ["9"]
+
+
+class TestTryCatch:
+    """``प्रयास`` / ``पकड़`` — real handlers, real unwinding (3.1)."""
+
+    def test_division_fault_is_caught(self):
+        source = (
+            "प्रयास\n"
+            "    दर्शय 1 / 0\n"
+            "पकड़ त\n"
+            "    दर्शय \"पकड़ा: \" + त\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["पकड़ा: शून्य से भाग दिया गया"]
+
+    def test_execution_continues_after_the_handler(self):
+        source = (
+            "प्रयास\n"
+            "    दर्शय 1 / 0\n"
+            "पकड़ त\n"
+            "    दर्शय \"त्रुटि\"\n"
+            "अन्त\n"
+            "दर्शय \"जीवित\"\n"
+        )
+        assert out(source) == ["त्रुटि", "जीवित"]
+
+    def test_undefined_name_is_caught(self):
+        source = (
+            "प्रयास\n"
+            "    दर्शय अपरिभाषित\n"
+            "पकड़ गलती\n"
+            "    दर्शय गलती\n"
+            "अन्त\n"
+        )
+        assert out(source)[0].startswith("अपरिभाषित नाम")
+
+    def test_no_fault_means_the_handler_is_skipped(self):
+        source = (
+            "प्रयास\n"
+            "    दर्शय \"ठीक\"\n"
+            "पकड़ त\n"
+            "    दर्शय \"नहीं\"\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["ठीक"]
+
+    def test_return_inside_try_returns(self):
+        source = (
+            "कार्य सुरक्षित(a, b)\n"
+            "    प्रयास\n"
+            "        प्रत्यागमन a / b\n"
+            "    पकड़ त\n"
+            "        प्रत्यागमन \"त्रुटि: \" + त\n"
+            "    अन्त\n"
+            "अन्त\n"
+            "दर्शय सुरक्षित(10, 2)\n"
+            "दर्शय सुरक्षित(1, 0)\n"
+        )
+        assert out(source) == ["5.0", "त्रुटि: शून्य से भाग दिया गया"]
+
+    def test_fault_in_a_called_function_is_caught_by_the_caller(self):
+        source = (
+            "कार्य विफल()\n"
+            "    प्रत्यागमन 1 / 0\n"
+            "अन्त\n"
+            "प्रयास\n"
+            "    विफल()\n"
+            "पकड़ त\n"
+            "    दर्शय \"पकड़ा\"\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["पकड़ा"]
+
+    def test_inner_handler_wins(self):
+        source = (
+            "प्रयास\n"
+            "    प्रयास\n"
+            "        दर्शय 1 / 0\n"
+            "    पकड़ भीतरी\n"
+            "        दर्शय \"भीतरी\"\n"
+            "    अन्त\n"
+            "पकड़ बाहरी\n"
+            "    दर्शय \"बाहरी\"\n"
+            "अन्त\n"
+        )
+        assert out(source) == ["भीतरी"]
+
+    def test_uncaught_fault_still_reports(self):
+        error = error_of("प्रयास\n    दर्शय 1 / 0\nपकड़ त\n    दर्शय \"ठीक\"\nअन्त\nदर्शय 1 / 0\n")
+        assert "शून्य से भाग" in error.message
+
+    def test_step_budget_cannot_be_swallowed(self):
+        source = (
+            "प्रयास\n"
+            "    यावत् सत्य\n"
+            "        x = 1\n"
+            "    अन्त\n"
+            "पकड़ त\n"
+            "    दर्शय \"पकड़ा\"\n"
+            "अन्त\n"
+        )
+        error = error_of(source, step_limit=500)
+        assert "चरण सीमा" in error.message
+
+    def test_bytecode_round_trip_keeps_handlers(self, tmp_path):
+        from brahma import compile_source, dump_bytecode, load_bytecode
+        from brahma.vm import VM
+
+        source = "प्रयास\n    दर्शय 1 / 0\nपकड़ त\n    दर्शय \"पकड़ा\"\nअन्त\n"
+        path = str(tmp_path / "try.sbc")
+        dump_bytecode(compile_source(source), path)
+        lines = []
+        VM(out=lines.append).run(load_bytecode(path))
+        assert lines == ["पकड़ा"]
+
+
+class TestStringInterpolation:
+    """``$"…{expr}…"`` compiles to a ``+`` chain over ``पाठ()`` (3.1)."""
+
+    def test_variable_interpolation(self):
+        assert out('नाम = "ब्रह्म"\nदर्शय $"नमस्ते {नाम}!"') == ["नमस्ते ब्रह्म!"]
+
+    def test_expression_interpolation(self):
+        assert out('दर्शय $"योग = {2 + 3}"') == ["योग = 5"]
+
+    def test_several_placeholders(self):
+        assert out('a = 1\nb = 2\nदर्शय $"{a} + {b} = {a + b}"') == ["1 + 2 = 3"]
+
+    def test_numbers_and_lists_are_formatted(self):
+        assert out('दर्शय $"सूची {[1, 2]}"') == ["सूची [1, 2]"]
+
+    def test_escaped_braces_are_literal(self):
+        assert out('दर्शय $"ब्रेस {{लिटरल}}"') == ["ब्रेस {लिटरल}"]
+
+    def test_plain_strings_keep_their_braces(self):
+        assert out('दर्शय "{अक्षुण्ण}"') == ["{अक्षुण्ण}"]
+
+    def test_unclosed_placeholder_is_a_parse_error(self):
+        error = error_of('दर्शय $"अधूरा {नाम"')
+        assert "अधूरा" in error.message
+
+    def test_embedded_syntax_error_is_reported(self):
+        error = error_of('दर्शय $"त्रुटि {1 +}"')
+        assert error.line == 1
+
+    def test_interpolation_inside_a_function_and_a_call(self):
+        source = (
+            "कार्य अभिवादन(नाम)\n"
+            "    प्रत्यागमन $\"नमस्ते {नाम}\"\n"
+            "अन्त\n"
+            "दर्शय अभिवादन(\"ब्रह्म\")\n"
+        )
+        assert out(source) == ["नमस्ते ब्रह्म"]

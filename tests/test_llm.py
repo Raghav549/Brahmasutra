@@ -592,6 +592,14 @@ class TestMission:
         assert report["ok"], report["problems"]
         assert "5" in report["output"]
 
+    def test_kernel_uses_its_own_exception_support(self):
+        """सुरक्षित_आह्वान अज्ञात syscall को पकड़ता है (3.1)."""
+        report = verify()
+        assert report["ready"] is True and report["ok"] is True
+        assert any("उपप्रणाली: 6/6 ठीक" in line for line in report["output"])
+        assert any("अपवाद: 1 पकड़े" in line for line in report["output"])
+        assert any("कर्नेल API: 10 फलन" in line for line in report["output"])
+
     def test_mission_resume_keeps_the_better_checkpoint(self, home, tmp_path):
         """Resume वही चेकपॉइंट रखता है और गिरावट को "सुधार" नहीं कहता।"""
         from brahma_llm.mission import run_mission

@@ -4,7 +4,7 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
 
     program    := (NL | stmt)* EOF
     stmt       := let | assign | index_assign | print | if | while
-                | func | return | break | continue | expr_stmt
+                | func | try | return | break | continue | expr_stmt
     let        := "स्थापय" NAME "=" expr
     assign     := NAME ("=" | "+=" | "-=" | "*=" | "/=" | "%=") expr
     print      := "दर्शय" expr
@@ -13,6 +13,7 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
                   ("अन्यथा" NL block)? END
     while      := "यावत्" expr NL block END
     func       := "कार्य" NAME "(" params ")" NL block END
+    try        := "प्रयास" NL block "पकड़" NAME NL block END
     return     := "प्रत्यागमन" expr?
     expr       := or
     or         := and ("वा" and)*
@@ -24,17 +25,17 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
     unary      := ("न" | "-" | "+") unary | power
     power      := postfix ("**" unary)?
     postfix    := primary ("[" expr? (":" expr?)? "]")*
-    primary    := NUMBER | STRING | "सत्य" | "असत्य" | "शून्य"
+    primary    := NUMBER | STRING | INTERP_STRING | "सत्य" | "असत्य" | "शून्य"
                 | NAME "(" args ")" | NAME | "[" items "]" | "{" pairs "}"
                 | "(" expr ")"
 """
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from . import ast_nodes as ast
-from .errors import ParseError
+from .errors import LexError, ParseError
 from .lexer import tokenize
 from .tokens import Token, TokenKind
 
@@ -144,6 +145,9 @@ class Parser:
             body = self.block()
             self.loop_depth -= 1
             return ast.WhileStmt(line=token.line, condition=condition, body=body)
+
+        if self.match_keyword("TRY"):
+            return self.try_statement(token)
 
         if self.match_keyword("FUNC"):
             return self.func_statement(token)
@@ -266,15 +270,32 @@ class Parser:
         self.func_depth -= 1
         return ast.FuncDef(line=token.line, name=name.value, params=params, body=body)
 
-    def block(self) -> List[ast.Node]:
-        """Parse a newline separated block terminated by ``END``."""
+    def try_statement(self, token: Token) -> ast.TryStmt:
+        """``प्रयास`` … ``पकड़ नाम`` … ``अन्त``."""
+        body = self.block(stops=("CATCH",))
+        if not self.match_keyword("CATCH"):
+            raise self.error("'पकड़' अपेक्षित था")
+        name = self.expect_name("त्रुटि चर का नाम")
+        handler = self.block()
+        return ast.TryStmt(line=token.line, body=body, name=name.value, handler=handler)
+
+    def block(self, stops: Tuple[str, ...] = ()) -> List[ast.Node]:
+        """Parse a newline separated block terminated by ``END``.
+
+        ``stops`` names extra keywords (e.g. ``CATCH``) that may end the block
+        without being consumed, so that the caller can inspect them.
+        """
         self.skip_newlines()
         statements: List[ast.Node] = []
-        while not self.check_keyword("END", "ELSE", "ELIF") and not self.check(TokenKind.EOF):
+        while (not self.check_keyword("END", "ELSE", "ELIF")
+               and not self.check_keyword(*stops)
+               and not self.check(TokenKind.EOF)):
             statements.append(self.statement())
             self.skip_newlines()
         if self.check_keyword("END"):
             self.advance()
+        elif stops and self.check_keyword(*stops):
+            pass
         elif self.check(TokenKind.EOF):
             raise self.error("'अन्त' अपेक्षित था (block अधूरा है)")
         return statements
@@ -370,6 +391,77 @@ class Parser:
                 node = ast.Index(line=token.line, target=node, index=start)
         return node
 
+    def _interpolation(self, token: Token) -> ast.Node:
+        """Lower ``$"...{expr}..."`` into a ``+`` chain of strings.
+
+        ``{{`` and ``}}`` produce literal braces.  Every interpolated
+        expression is wrapped in ``पाठ(...)`` so any value can be embedded.
+        """
+        text = token.value
+        parts: List[ast.Node] = []
+        buffer: List[str] = []
+
+        def flush() -> None:
+            if buffer:
+                parts.append(ast.Literal(line=token.line, value="".join(buffer)))
+                del buffer[:]
+
+        index = 0
+        while index < len(text):
+            char = text[index]
+            if char == "{" and text.startswith("{{", index):
+                buffer.append("{")
+                index += 2
+                continue
+            if char == "}" and text.startswith("}}", index):
+                buffer.append("}")
+                index += 2
+                continue
+            if char == "{":
+                depth = 1
+                end = index + 1
+                while end < len(text) and depth:
+                    if text[end] == "{":
+                        depth += 1
+                    elif text[end] == "}":
+                        depth -= 1
+                    end += 1
+                if depth:
+                    raise self.error("अधूरा '{' शब्द में", token)
+                inner = text[index + 1 : end - 1].strip()
+                if not inner:
+                    raise self.error("खाली '{}' — अभिव्यक्ति चाहिए", token)
+                flush()
+                expression = self._embedded(inner, token)
+                parts.append(ast.Call(line=token.line, callee="पाठ", args=[expression]))
+                index = end
+                continue
+            if char == "}":
+                raise self.error("अकेला '}' — '}}' लिखें", token)
+            buffer.append(char)
+            index += 1
+        flush()
+
+        if not parts:
+            return ast.Literal(line=token.line, value="")
+        node = parts[0]
+        for part in parts[1:]:
+            node = ast.BinaryOp(line=token.line, op="+", left=node, right=part)
+        return node
+
+    def _embedded(self, source: str, token: Token) -> ast.Node:
+        """Parse one expression embedded in an interpolated string."""
+        try:
+            tokens = tokenize(source, self.source_name)
+        except LexError as exc:
+            raise self.error("शब्द-अन्तर्गत अभिव्यक्ति अमान्य: %s" % exc.message, token)
+        sub = Parser(tokens, self.source_name)
+        node = sub.expression()
+        sub.skip_newlines()
+        if not sub.check(TokenKind.EOF):
+            raise self.error("शब्द-अन्तर्गत अतिरिक्त टोकन", token)
+        return node
+
     def primary(self) -> ast.Node:
         token = self.current
 
@@ -379,6 +471,8 @@ class Parser:
 
         if token.kind is TokenKind.STRING:
             self.advance()
+            if token.text.startswith("$"):
+                return self._interpolation(token)
             return ast.Literal(line=token.line, value=token.value)
 
         if token.kind is TokenKind.KEYWORD:
