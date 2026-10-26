@@ -162,6 +162,14 @@ class TryStmt(Node):
 
 
 @dataclass
+class ScopeDecl(Node):
+    """``बाह्य नाम`` / ``वैश्विक नाम`` — bind a name in an enclosing scope."""
+
+    kind: str = "nonlocal"      # "nonlocal" | "global"
+    names: List[str] = field(default_factory=list)
+
+
+@dataclass
 class RaiseStmt(Node):
     """``उठाओ expr`` — raise a fault carrying a message."""
 

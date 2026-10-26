@@ -612,7 +612,7 @@ them), a bigger held-out set, then a larger `--size`.
 $ python -m pytest tests/test_llm.py -q
 59 passed in 14.6 s
 $ python -m pytest -q
-548 passed in 30.0 s
+556 passed in 30.0 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural

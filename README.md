@@ -7,7 +7,7 @@ that writes सूत्र and retrains itself.**
 [![CI](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml/badge.svg)](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-548%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-556%20passing-brightgreen)](tests/)
 
 ```brahma
 कार्य फिब(n)
@@ -56,7 +56,7 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, interpolation, slice assignment, 40+ builtins) | ✅ **stable**, 548 tests, 93 % coverage |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, closures, `प्रयास`/`पकड़`/`अन्ततः`/`उठाओ`, `बाह्य`/`वैश्विक`, interpolation, slice assignment, 40+ builtins) | ✅ **stable**, 556 tests, 93 % coverage |
 | `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, **सूत्र-OS kernel**, agent (chat·code·run·explain·image) and HTTP server | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
@@ -239,7 +239,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 548 passed in ~28 s
+pytest -q                                  # 556 passed in ~28 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered

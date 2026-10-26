@@ -53,6 +53,10 @@ KEYWORDS: Dict[str, str] = {
     "finally": "FINALLY",
     "उठाओ": "RAISE",
     "raise": "RAISE",
+    "बाह्य": "NONLOCAL",
+    "nonlocal": "NONLOCAL",
+    "वैश्विक": "GLOBAL",
+    "global": "GLOBAL",
     # binding
     "स्थापय": "LET",
     "let": "LET",

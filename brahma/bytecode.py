@@ -56,6 +56,8 @@ OPCODES: Dict[str, int] = {
     "RAISE": 24,
     "RERAISE": 25,
     "STORE_SLICE": 26,
+    "DECLARE_NONLOCAL": 27,
+    "DECLARE_GLOBAL": 28,
 }
 
 #: Ops whose ``arg`` is a jump target.

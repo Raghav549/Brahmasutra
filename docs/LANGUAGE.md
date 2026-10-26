@@ -1,9 +1,10 @@
 # BRAHMA भाषा संदर्भ (Language Reference)
 
-Version 3.2.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
+Version 3.5.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
 Grammar history: 3.0.0 added dicts, slices and multi-line literals; 3.1.0 added
 closures, `प्रयास`/`पकड़` exception handling and `$"…{expr}…"` interpolation;
-3.2.0 added `उठाओ` (raise), `अन्ततः` (finally) and slice assignment.
+3.2.0 added `उठाओ` (raise), `अन्ततः` (finally) and slice assignment; 3.5.0 added
+`बाह्य`/`वैश्विक` scope declarations.
 
 BRAHMA is a small, dynamically typed language whose native vocabulary is
 Sanskrit. Every keyword is available in Devanagari **and** in ASCII, so the
@@ -103,6 +104,8 @@ arguments are therefore ordinary code:
 | `पकड़` | `catch` | bind the fault and handle it |
 | `अन्ततः` | `finally` | always run, however the block is left |
 | `उठाओ` | `raise` | raise a fault with a message |
+| `बाह्य` | `nonlocal` | write through to an enclosing closure variable |
+| `वैश्विक` | `global` | write through to a global |
 | `प्रत्यागमन` | `return` | return from function |
 | `सत्य` | `true` | boolean true |
 | `असत्य` | `false` | boolean false |
@@ -239,6 +242,20 @@ Functions may read globals but cannot rebind them (there is no `global`).
 स[0:0] = [0]              # insert at the front
 स[-1:] = []               # delete the tail
 
+# a closure that keeps state
+कार्य काउंटर()
+    स्थापय गिनती = 0
+    कार्य बढ़ाओ()
+        बाह्य गिनती
+        गिनती = गिनती + 1
+        प्रत्यागमन गिनती
+    अन्त
+    प्रत्यागमन बढ़ाओ
+अन्त
+c = काउंटर()
+दर्शय c()               # 1
+दर्शय c()               # 2
+
 # closure: the inner function captures `n`
 कार्य वृद्धि(n)
     कार्य जोड़(x)
@@ -272,6 +289,12 @@ Functions may read globals but cannot rebind them (there is no `global`).
 * `कार्य` bodies are lexically scoped: names are looked up in the current frame,
   then in each enclosing scope captured at definition time, then in globals.
   Two closures made by two calls are independent.
+* Assignment inside a function writes a **local** unless the name is declared
+  `बाह्य` (write to the enclosing closure) or `वैश्विक` (write to the globals).
+  Declarations go at the top of the function body and may list several names
+  (`बाह्य a, b`); they are compile-time markers, not runtime statements.  A
+  `बाह्य` name that no enclosing scope owns falls back to a global, as in
+  Python.
 
 ---
 
@@ -344,7 +367,7 @@ Runtime guards:
 
 The step budget makes accidental hangs impossible, but it is **not** a security
 sandbox: BRAHMA programs cannot touch the filesystem or network at all, because
-no such builtins exist in 3.2.0.
+no such builtins exist in 3.5.0.
 
 ---
 
@@ -402,6 +425,8 @@ raise `BytecodeError` and never execute partially.
 | `RAISE` | — | pop a message, raise a runtime fault |
 | `RERAISE` | — | re-raise the fault this frame is handling |
 | `STORE_SLICE` | — | `target start stop value` → replace a list slice |
+| `DECLARE_NONLOCAL` | name | mark writes as targeting the enclosing scope |
+| `DECLARE_GLOBAL` | name | mark writes as targeting the globals |
 | `PRINT` | — | pop and print |
 | `HALT` | — | stop the program |
 
@@ -425,17 +450,16 @@ After `pip install brahma-lang`, the same commands are available as `brahma`.
 
 ---
 
-## 10. Known limitations (3.2.0)
+## 10. Known limitations (3.5.0)
 
 Honest list — these are not implemented:
 
 * no user-defined classes/objects, no tuples or sets
 * no `import` / module system: a program is a single file
-* closures are **read-only**: assigning to a captured name creates a local in
-  the inner function (there is no `nonlocal`/`global` declaration)
 * no exception *types*: every fault is a message string, so `पकड़` cannot
   discriminate between, say, arithmetic and lookup errors
-* no `nonlocal`/`global`, so a closure cannot reassign a captured name
+* a `बाह्य` declaration is not validated against the enclosing scopes, so a
+  misspelled name silently becomes a global instead of being a compile error
 * no tail-call optimisation, no JIT; the VM is a straightforward interpreter
 * the C VM in `native_vm/` is a **separate**, much smaller prototype and does
   not implement this specification (it has no `TRY`/`MAKE_FUNCTION` closure
