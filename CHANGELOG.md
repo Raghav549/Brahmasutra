@@ -4,6 +4,51 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.4.0] — 2026-10-27
+
+### Added
+
+* **The loop can grow its own training data.**  `brahma llm corpus --generate N
+  [--goal TEXT] [--seed S] [--out DIR]` writes programs that were **compiled and
+  executed** before being written (`ProgramGenerator.passing`), and
+  `load_corpus()` now includes `$BRAHMA_HOME/corpus` automatically, so the next
+  `brahma llm train` uses them.  Nothing is faked: a candidate that does not run
+  never reaches the corpus.
+* **`brahma llm mission --grow N`** grows the corpus *inside* the autonomous
+  loop, before training, and reports `training.grow`.
+* 4 new tests (write/reload, CLI contract, the measured improvement, mission
+  growth) — **548** total.
+
+### Measured
+
+Identical seed and identical parameter count within each row, 3 epochs:
+
+| size | corpus | perplexity |
+|---|---|---|
+| `tiny` | base (117 texts) | 15.389 |
+| `tiny` | + 60 generated | **6.941** (−55 %) |
+| `small` | base | 19.687 |
+| `small` | + 300 generated | **4.795** (−76 %) |
+| `xlarge` (2 epochs) | base → + 300 generated | 229.838 → **27.489** (−88 %) |
+
+The `xlarge` row costs 72.6 s → 122.8 s because the corpus grew 3.5×, and its
+parameter count moves slightly (265 311 → 278 734) because the vocabulary grew
+with the new programs.  More data, more time, far better perplexity.
+
+And through the whole mission (tiny, 1 iteration, 2 epochs, same arguments):
+
+| mission | perplexity |
+|---|---|
+| plain | 23.862 |
+| `--grow 40` | **13.240** (−44.5 %) |
+
+### Changed
+
+* `brahma llm corpus --json` gains `generated_written`; the human output says how
+  many programs were written and where.
+* `docs/LLM.md` §3.1b is new and states the conclusion the numbers force: on
+  this project **data is the binding constraint**, not parameters.
+
 ## [3.3.0] — 2026-10-27
 
 ### Added

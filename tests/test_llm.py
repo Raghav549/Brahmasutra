@@ -248,6 +248,56 @@ class TestPrograms:
         assert any("सूत्र-OS" in text for text in corpus)
         assert sutra_files(), "रिपॉज़िटरी में .sutra फ़ाइलें नहीं मिलीं"
 
+    def test_generated_programs_can_be_written_and_reloaded(self, tmp_path):
+        from brahma_llm.programs import save_generated
+
+        generator = ProgramGenerator(seed=4)
+        programs = generator.passing(goal="अभाज्य", count=5)
+        written = save_generated([p.source for p in programs], outdir=str(tmp_path))
+        assert len(written) == 5
+        assert all(name.endswith(".sutra") for name in written)
+
+        corpus = load_corpus(include_docs=False, extra_dirs=[str(tmp_path)])
+        for program in programs:
+            assert program.source in corpus
+
+    def test_cli_corpus_generate_reports_what_it_wrote(self, tmp_path, capsys):
+        from brahma_llm.cli import main
+
+        code = main(["corpus", "--generate", "4", "--seed", "2",
+                     "--out", str(tmp_path), "--json"])
+        assert code == 0
+        stats = json.loads(capsys.readouterr().out)
+        assert stats["generated_written"] == 4
+        import os
+
+        names = sorted(os.listdir(tmp_path))
+        assert len(names) == 4
+        for name in names:
+            with open(os.path.join(str(tmp_path), name), encoding="utf-8") as handle:
+                assert validate_program(handle.read()).ok
+
+    def test_generated_data_improves_perplexity(self, tmp_path, home):
+        """अधिक वैध डेटा → बेहतर perplexity (मापा गया, दावा नहीं)."""
+        from brahma_llm.model import BrahmaLLM
+        from brahma_llm.programs import save_generated
+
+        tiny = "tiny"
+        base_corpus = load_corpus(include_docs=False, extra_dirs=[])
+        baseline = BrahmaLLM.create(kind="neural", size=tiny, seed=7)
+        baseline.fit(base_corpus, epochs=2)
+        base_ppl = baseline.evaluate(base_corpus[::5])["perplexity"]
+
+        programs = ProgramGenerator(seed=8).passing(count=40)
+        save_generated([p.source for p in programs], outdir=str(tmp_path))
+        grown_corpus = load_corpus(include_docs=False, extra_dirs=[str(tmp_path)])
+        grown = BrahmaLLM.create(kind="neural", size=tiny, seed=7)
+        grown.fit(grown_corpus, epochs=2)
+        grown_ppl = grown.evaluate(grown_corpus[::5])["perplexity"]
+
+        assert len(grown_corpus) > len(base_corpus)
+        assert grown_ppl < base_ppl, (base_ppl, grown_ppl)
+
 
 # ---------------------------------------------------------------------------
 # self-editing
@@ -647,6 +697,21 @@ class TestMission:
         assert training["best_perplexity"] <= first["training"]["best_perplexity"] + 1e-9
         assert training["improved_this_run"] is (
             training["best_perplexity"] < first["training"]["best_perplexity"])
+
+    def test_mission_can_grow_its_own_corpus(self, home, tmp_path):
+        """--grow प्रशिक्षण से पहले वैध कार्यक्रम जोड़ता है (3.4)।"""
+        import os
+
+        from brahma_llm.mission import run_mission
+        from brahma_llm.programs import generated_dir
+
+        report = run_mission("अभाज्य संख्या जाँच", outdir=str(tmp_path / "mission_grow"),
+                             iterations=1, epochs=1, size="tiny", budget=120, grow=10,
+                             write_os=False, serve=False, log=lambda message: None)
+        assert report["training"]["grow"] == 10
+        files = [name for name in os.listdir(generated_dir()) if name.endswith(".sutra")]
+        assert len(files) >= 10
+        assert report["training"]["best_perplexity"] is not None
 
     def test_mission_continuous_runs_several_generations(self, home, tmp_path):
         from brahma_llm.mission import run_mission

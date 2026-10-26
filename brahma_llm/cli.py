@@ -93,11 +93,27 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 
 def cmd_corpus(args: argparse.Namespace) -> int:
-    from .programs import load_corpus, sutra_files
+    from .programs import (ProgramGenerator, generated_dir, load_corpus,
+                           save_generated, sutra_files)
+
+    written = []
+    if getattr(args, "generate", 0):
+        generator = ProgramGenerator(seed=args.seed)
+        programs = generator.passing(goal=args.goal, count=args.generate)
+        outdir = args.out or generated_dir()
+        existing = 0
+        if os.path.isdir(outdir):
+            existing = len([name for name in os.listdir(outdir) if name.endswith(".sutra")])
+        written = save_generated([p.source for p in programs], outdir=outdir,
+                                 start=existing + 1)
+        if not args.json:
+            print("बनाए गए कार्यक्रम: %d/%d → %s"
+                  % (len(written), args.generate, outdir))
 
     files = sutra_files()
     corpus = load_corpus()
     stats = {
+        "generated_written": len(written),
         "sutra_files": len(files),
         "texts": len(corpus),
         "characters": sum(len(text) for text in corpus),
@@ -328,7 +344,7 @@ def cmd_mission(args: argparse.Namespace) -> int:
                          write_os=not args.no_os, resume=args.resume,
                          continuous=args.continuous,
                          target_perplexity=args.target_perplexity,
-                         max_generations=args.max_generations,
+                         max_generations=args.max_generations, grow=args.grow,
                          log=(lambda message: None) if args.json else print)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1, default=str))
@@ -400,6 +416,11 @@ def build_parser() -> argparse.ArgumentParser:
     corpus = sub.add_parser("corpus", help="कॉर्पस आँकड़े")
     corpus.add_argument("--json", action="store_true")
     corpus.add_argument("--sample", type=int, default=2)
+    corpus.add_argument("--generate", type=int, default=0,
+                        help="इतने वैध सूत्र कार्यक्रम बनाकर कॉर्पस में लिखें")
+    corpus.add_argument("--goal", default="")
+    corpus.add_argument("--seed", type=int, default=0)
+    corpus.add_argument("--out", default=None)
     corpus.set_defaults(func=cmd_corpus)
 
     train = sub.add_parser("train", help="एक बार प्रशिक्षित करें")
@@ -513,6 +534,8 @@ def build_parser() -> argparse.ArgumentParser:
                          help="सुधार होते रहने तक अगली पीढ़ियाँ चलाएँ")
     mission.add_argument("--target-perplexity", type=float, default=None)
     mission.add_argument("--max-generations", type=int, default=3)
+    mission.add_argument("--grow", type=int, default=0,
+                         help="प्रशिक्षण से पहले इतने नए वैध कार्यक्रम कॉर्पस में जोड़ें")
     mission.add_argument("--json", action="store_true")
     mission.set_defaults(func=cmd_mission)
 

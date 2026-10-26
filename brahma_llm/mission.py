@@ -210,6 +210,7 @@ def run_mission(
     continuous: bool = False,
     target_perplexity: Optional[float] = None,
     max_generations: int = 3,
+    grow: int = 0,
 ) -> Dict[str, object]:
     """Run the whole cycle for ``target`` and return the mission report.
 
@@ -235,6 +236,14 @@ def run_mission(
             previous_best = None
     if resume:
         log("↩️ पिछला मिशन: %s" % ("चेकपॉइंट मिला" if resume_from else "कोई नहीं — नए सिरे से"))
+
+    if grow:
+        from .programs import ProgramGenerator, save_generated
+
+        produced = ProgramGenerator(seed=seed).passing(goal=keywords or target, count=grow)
+        written = save_generated([program.source for program in produced])
+        log("🌱 कॉर्पस वृद्धि: %d नए वैध कार्यक्रम → %s" % (len(written), os.path.dirname(written[0]) if written else "-"))
+        grow = len(written)
 
     log("🕉️ लक्ष्य: %s" % target)
     generations: list = []
@@ -327,6 +336,7 @@ def run_mission(
             "resumed_from": resume_from,
             "previous_best": previous_best,
             "improved_this_run": bool(previous_best is None or best_perplexity < previous_best),
+            "grow": grow,
         },
         "os": os_report,
         "server": server_report,
@@ -348,6 +358,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--target", required=True)
     parser.add_argument("--keywords", default="")
     parser.add_argument("--iterations", type=int, default=2)
+    parser.add_argument("--grow", type=int, default=0,
+                        help="प्रशिक्षण से पहले इतने नए वैध कार्यक्रम कॉर्पस में जोड़ें")
     parser.add_argument("--epochs", type=int, default=2)
     parser.add_argument("--size", default="tiny")
     parser.add_argument("--budget", type=float, default=180.0)
