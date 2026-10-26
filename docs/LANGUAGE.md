@@ -1,8 +1,9 @@
 # BRAHMA भाषा संदर्भ (Language Reference)
 
-Version 3.1.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
+Version 3.2.0 — implemented by `brahma/` (lexer → parser → compiler → VM).
 Grammar history: 3.0.0 added dicts, slices and multi-line literals; 3.1.0 added
-closures, `प्रयास`/`पकड़` exception handling and `$"…{expr}…"` interpolation.
+closures, `प्रयास`/`पकड़` exception handling and `$"…{expr}…"` interpolation;
+3.2.0 added `उठाओ` (raise), `अन्ततः` (finally) and slice assignment.
 
 BRAHMA is a small, dynamically typed language whose native vocabulary is
 Sanskrit. Every keyword is available in Devanagari **and** in ASCII, so the
@@ -100,6 +101,8 @@ arguments are therefore ordinary code:
 | `कार्य` | `func` / `def` | define function |
 | `प्रयास` | `try` | guarded block |
 | `पकड़` | `catch` | bind the fault and handle it |
+| `अन्ततः` | `finally` | always run, however the block is left |
+| `उठाओ` | `raise` | raise a fault with a message |
 | `प्रत्यागमन` | `return` | return from function |
 | `सत्य` | `true` | boolean true |
 | `असत्य` | `false` | boolean false |
@@ -212,12 +215,29 @@ Functions may read globals but cannot rebind them (there is no `global`).
 अन्त
 दर्शय योग(2, 3)
 
-# guarded block
+# guarded block, with cleanup
 प्रयास
     दर्शय 10 / 0
 पकड़ त्रुटि
     दर्शय "विफल: " + त्रुटि
+अन्ततः
+    दर्शय "सफाई"
 अन्त
+
+# raise your own fault
+प्रयास
+    यदि 10 < 0
+        उठाओ "ऋणात्मक"
+    अन्त
+पकड़ त
+    दर्शय त
+अन्त
+
+# slice assignment
+स = [1, 2, 3, 4]
+स[1:3] = [9, 9, 9]        # [1, 9, 9, 9, 4]
+स[0:0] = [0]              # insert at the front
+स[-1:] = []               # delete the tail
 
 # closure: the inner function captures `n`
 कार्य वृद्धि(n)
@@ -234,6 +254,16 @@ Functions may read globals but cannot rebind them (there is no `global`).
 * Falling off the end of a function returns `शून्य`.
 * `विराम`/`चल` outside a loop is a **parse error** (caught before execution).
 * `प्रत्यागमन` outside a function is a parse error.
+* `उठाओ expr` raises a fault carrying `पाठ(expr)`.  `उठाओ` with no value uses
+  a default message.  A fault with no handler stops the program with a
+  traceback, exactly like a failed division.
+* `अन्ततः` runs on **every** exit from the guard — normal completion, a caught
+  fault, an uncaught fault (which then keeps propagating), and every
+  `प्रत्यागमन`/`विराम`/`चल` inside it.  `प्रयास` requires at least one of
+  `पकड़`/`अन्ततः`.
+* `x[a:b] = सूची` replaces that slice; the replacement may be longer or
+  shorter, so it also inserts (`a == b`) and deletes (`[]`).  Only lists are
+  assignable — strings are immutable.
 * `प्रयास … पकड़ नाम … अन्त`: a fault raised anywhere inside the block — including
   inside functions it calls — unwinds to the nearest handler, which receives the
   message in `नाम` as a string; execution then continues after `अन्त`.  Nested
@@ -314,7 +344,7 @@ Runtime guards:
 
 The step budget makes accidental hangs impossible, but it is **not** a security
 sandbox: BRAHMA programs cannot touch the filesystem or network at all, because
-no such builtins exist in 3.1.0.
+no such builtins exist in 3.2.0.
 
 ---
 
@@ -369,6 +399,9 @@ raise `BytecodeError` and never execute partially.
 | `MAKE_FUNCTION` | code object | push function value (captures the frame) |
 | `TRY` | `[handler, name]` | push a handler: `(ip, stack depth, name)` |
 | `END_TRY` | — | pop the innermost handler (normal completion) |
+| `RAISE` | — | pop a message, raise a runtime fault |
+| `RERAISE` | — | re-raise the fault this frame is handling |
+| `STORE_SLICE` | — | `target start stop value` → replace a list slice |
 | `PRINT` | — | pop and print |
 | `HALT` | — | stop the program |
 
@@ -392,7 +425,7 @@ After `pip install brahma-lang`, the same commands are available as `brahma`.
 
 ---
 
-## 10. Known limitations (3.1.0)
+## 10. Known limitations (3.2.0)
 
 Honest list — these are not implemented:
 
@@ -400,9 +433,9 @@ Honest list — these are not implemented:
 * no `import` / module system: a program is a single file
 * closures are **read-only**: assigning to a captured name creates a local in
   the inner function (there is no `nonlocal`/`global` declaration)
-* no slice *assignment* (`x[1:3] = …`); element assignment and slicing reads work
-* no `finally` block and no exception *types* — `पकड़` receives the message
-  string; the step-budget and call-depth guards are intentionally uncatchable
+* no exception *types*: every fault is a message string, so `पकड़` cannot
+  discriminate between, say, arithmetic and lookup errors
+* no `nonlocal`/`global`, so a closure cannot reassign a captured name
 * no tail-call optimisation, no JIT; the VM is a straightforward interpreter
 * the C VM in `native_vm/` is a **separate**, much smaller prototype and does
   not implement this specification (it has no `TRY`/`MAKE_FUNCTION` closure

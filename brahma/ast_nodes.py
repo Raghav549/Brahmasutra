@@ -118,6 +118,16 @@ class IndexAssignStmt(Node):
 
 
 @dataclass
+class SliceAssignStmt(Node):
+    """``x[start:stop] = value`` — replace a slice of a list."""
+
+    target: Optional[Node] = None
+    start: Optional[Node] = None
+    stop: Optional[Node] = None
+    value: Optional[Node] = None
+
+
+@dataclass
 class IfStmt(Node):
     condition: Optional[Node] = None
     body: List[Node] = field(default_factory=list)
@@ -139,11 +149,23 @@ class FuncDef(Node):
 
 @dataclass
 class TryStmt(Node):
-    """``प्रयास … पकड़ नाम … अन्त`` — run ``body``, bind a fault to ``name``."""
+    """``प्रयास … पकड़ नाम … अन्ततः … अन्त``.
+
+    ``handler`` is empty when the user wrote only ``प्रयास``/``अन्ततः`` (the
+    fault runs the ``final`` block and then keeps propagating).
+    """
 
     body: List[Node] = field(default_factory=list)
     name: str = "त्रुटि"
     handler: List[Node] = field(default_factory=list)
+    final: List[Node] = field(default_factory=list)
+
+
+@dataclass
+class RaiseStmt(Node):
+    """``उठाओ expr`` — raise a fault carrying a message."""
+
+    value: Optional[Node] = None
 
 
 @dataclass

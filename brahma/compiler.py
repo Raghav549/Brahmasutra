@@ -24,7 +24,10 @@ class Compiler:
 
     def __init__(self, echo: bool = False) -> None:
         self.echo = echo
-        self.loops: List[Tuple[int, List[int], List[int]]] = []
+        self.loops: List[Tuple[int, List[int], List[int], int]] = []
+        #: ``अन्ततः`` blocks in scope, innermost last.  ``विराम``, ``चल`` and
+        #: ``प्रत्यागमन`` must run them before leaving the guard.
+        self.exits: List[List[ast.Node]] = []
         self.function: Optional[CodeObject] = None
 
     # -- public API ------------------------------------------------------
@@ -81,6 +84,26 @@ class Compiler:
         elif isinstance(node, ast.TryStmt):
             self._try(node, code)
 
+        elif isinstance(node, ast.RaiseStmt):
+            if node.value is None:
+                code.emit("LOAD_CONST", "उठाया गया अपवाद", node.line)
+            else:
+                self._expr(node.value, code)
+            code.emit("RAISE", line=node.line)
+
+        elif isinstance(node, ast.SliceAssignStmt):
+            self._expr(node.target, code)
+            if node.start is None:
+                code.emit("LOAD_CONST", None, node.line)
+            else:
+                self._expr(node.start, code)
+            if node.stop is None:
+                code.emit("LOAD_CONST", None, node.line)
+            else:
+                self._expr(node.stop, code)
+            self._expr(node.value, code)
+            code.emit("STORE_SLICE", line=node.line)
+
         elif isinstance(node, ast.ReturnStmt):
             if self.function is None:
                 raise CompileError("'प्रत्यागमन' कार्य के बाहर", line=node.line)
@@ -88,18 +111,23 @@ class Compiler:
                 code.emit("LOAD_CONST", None, node.line)
             else:
                 self._expr(node.value, code)
+            # The return value waits on the stack: every statement is
+            # stack-balanced, so it is still on top when RETURN runs.
+            self._run_exits(code, 0, node.line)
             code.emit("RETURN", line=node.line)
 
         elif isinstance(node, ast.BreakStmt):
             if not self.loops:
                 raise CompileError("'विराम' चक्र के बाहर", line=node.line)
-            _, breaks, _ = self.loops[-1]
+            _, breaks, _, depth = self.loops[-1]
+            self._run_exits(code, depth, node.line)
             breaks.append(code.emit("JUMP", None, node.line))
 
         elif isinstance(node, ast.ContinueStmt):
             if not self.loops:
                 raise CompileError("'चल' चक्र के बाहर", line=node.line)
-            start, _, continues = self.loops[-1]
+            start, _, continues, depth = self.loops[-1]
+            self._run_exits(code, depth, node.line)
             continues.append(code.emit("JUMP", start, node.line))
 
         else:  # pragma: no cover - defensive
@@ -122,9 +150,9 @@ class Compiler:
         self._expr(node.condition, code)
         jump_out = code.emit("JUMP_IF_FALSE", None, node.line)
 
-        self.loops.append((start, [], []))
+        self.loops.append((start, [], [], len(self.exits)))
         self._statements(node.body, code)
-        _, breaks, continues = self.loops.pop()
+        _, breaks, continues, _ = self.loops.pop()
 
         code.emit("JUMP", start, node.line)
         end = len(code)
@@ -135,14 +163,62 @@ class Compiler:
             if code.instructions[index].arg is None:  # pragma: no cover - defensive
                 code.instructions[index].arg = start
 
+    def _run_exits(self, code: CodeObject, depth: int, line: int) -> None:
+        """Inline every ``अन्ततः`` body from the innermost down to ``depth``.
+
+        Compiling an exit block temporarily trims the stack so that a
+        ``प्रत्यागमन`` *inside* a ``अन्ततः`` runs the remaining outer blocks
+        instead of recursing into itself.
+        """
+        for index in range(len(self.exits) - 1, depth - 1, -1):
+            saved = self.exits
+            self.exits = saved[:index]
+            try:
+                self._statements(saved[index], code)
+            finally:
+                self.exits = saved
+
     def _try(self, node: ast.TryStmt, code: CodeObject) -> None:
-        """``प्रयास`` … ``पकड़`` … — a real handler table, not a macro."""
+        """``प्रयास`` … ``पकड़`` … ``अन्ततः`` … — a real handler table.
+
+        ``अन्ततः`` bodies are inlined on every exit path (normal completion,
+        handler completion, and each ``प्रत्यागमन``/``विराम``/``चल`` inside the
+        guard), so the block runs exactly once however control leaves.
+        """
+        has_final = bool(node.final)
+        if has_final:
+            self.exits.append(node.final)
+
         guard = code.emit("TRY", [0, node.name], node.line)
         self._statements(node.body, code)
         code.emit("END_TRY", line=node.line)
+        if has_final:
+            self.exits.pop()
+            self._statements(node.final, code)
         jump_end = code.emit("JUMP", None, node.line)
+
         code.instructions[guard].arg[0] = len(code)
-        self._statements(node.handler, code)
+        if node.handler:
+            inner = None
+            if has_final:
+                self.exits.append(node.final)
+                inner = code.emit("TRY", [0, node.name], node.line)
+            self._statements(node.handler, code)
+            if has_final:
+                self.exits.pop()
+                code.emit("END_TRY", line=node.line)
+                self._statements(node.final, code)
+                jump_done = code.emit("JUMP", None, node.line)
+                code.instructions[inner].arg[0] = len(code)
+                self._statements(node.final, code)
+                code.emit("RERAISE", line=node.line)
+                code.instructions[jump_done].arg = len(code)
+            code.instructions[jump_end].arg = len(code)
+            return
+
+        # No handler: run ``अन्ततः`` and let the fault keep propagating.
+        self._statements(node.final, code)
+        code.emit("RERAISE", line=node.line)
         code.instructions[jump_end].arg = len(code)
 
     def _function(self, node: ast.FuncDef, code: CodeObject) -> None:

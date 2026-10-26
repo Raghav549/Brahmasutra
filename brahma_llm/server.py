@@ -16,6 +16,7 @@ endpoint                what it really does
 ``POST /run``           compile + execute सूत्र source on the VM
 ``POST /explain``       structural analysis of सूत्र source
 ``GET  /image``         ``?prompt=…`` → a real PNG (model-driven procedural render)
+``POST /shell``         ``{"command": "…"}`` → the सूत्र-OS shell answers
 ``POST /train``         one autonomous training round (opt-in, off by default)
 ======================  ==================================================================
 
@@ -26,6 +27,7 @@ nothing here shells out, and ``/train`` is disabled unless ``allow_train=True``.
 from __future__ import annotations
 
 import os
+import threading
 from typing import Optional
 
 from brahma_web import App, BadRequest, Response, json_response
@@ -105,6 +107,7 @@ def create_app(model=None, checkpoint: Optional[str] = None, image_dir: Optional
     pictures = image_dir or os.path.join(os.getcwd(), "chitra")
     os.makedirs(pictures, exist_ok=True)
     app = App(name)
+    shell_lock = threading.Lock()
 
     @app.route("/")
     def index(_request):
@@ -194,6 +197,24 @@ def create_app(model=None, checkpoint: Optional[str] = None, image_dir: Optional
                         headers={"Cache-Control": "no-store",
                                  "X-Brahma-Origin": str(meta.get("origin", "")).split(":")[0],
                                  "X-Brahma-Seed": str(meta["seed"])})
+
+    @app.route("/shell", methods=("POST",))
+    def shell(request):
+        from .shell import KernelShell
+
+        body = request.json()
+        command = body.get("command", body.get("line"))
+        if not isinstance(command, str) or not command.strip():
+            raise BadRequest("command is required")
+        if len(command) > 2000:
+            raise BadRequest("command too long (max 2000 characters)")
+        with shell_lock:
+            if not hasattr(app, "_kernel_shell"):
+                app._kernel_shell = KernelShell()
+            result = app._kernel_shell.command(command)
+        return json_response({"command": command, "output": result["output"],
+                              "ok": result["ok"], "steps": result["steps"],
+                              "exit": result["exit"], "error": result["error"]})
 
     @app.route("/train", methods=("POST",))
     def train(request):

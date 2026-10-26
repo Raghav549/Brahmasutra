@@ -13,7 +13,9 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
                   ("अन्यथा" NL block)? END
     while      := "यावत्" expr NL block END
     func       := "कार्य" NAME "(" params ")" NL block END
-    try        := "प्रयास" NL block "पकड़" NAME NL block END
+    try        := "प्रयास" NL block ("पकड़" NAME NL block)?
+                  ("अन्ततः" NL block)? END
+    raise      := "उठाओ" expr?
     return     := "प्रत्यागमन" expr?
     expr       := or
     or         := and ("वा" and)*
@@ -149,6 +151,12 @@ class Parser:
         if self.match_keyword("TRY"):
             return self.try_statement(token)
 
+        if self.match_keyword("RAISE"):
+            quiet = (self.check(TokenKind.NEWLINE) or self.check(TokenKind.EOF)
+                     or self.check_keyword("END"))
+            return ast.RaiseStmt(line=token.line,
+                                 value=None if quiet else self.expression())
+
         if self.match_keyword("FUNC"):
             return self.func_statement(token)
 
@@ -184,11 +192,15 @@ class Parser:
             target = self.postfix()
         except Exception:  # noqa: BLE001 - not an lvalue, fall through
             target = None
-        if target is not None and self.check_op("=") and isinstance(target, (ast.Name, ast.Index)):
+        if target is not None and self.check_op("=") and isinstance(
+                target, (ast.Name, ast.Index, ast.Slice)):
             self.advance()
             value = self.expression()
             if isinstance(target, ast.Name):
                 return ast.AssignStmt(line=token.line, name=target.name, value=value, op="=")
+            if isinstance(target, ast.Slice):
+                return ast.SliceAssignStmt(line=token.line, target=target.target,
+                                           start=target.start, stop=target.stop, value=value)
             return ast.IndexAssignStmt(line=token.line, target=target.target,
                                        index=target.index, value=value)
         self.pos = saved
@@ -271,13 +283,20 @@ class Parser:
         return ast.FuncDef(line=token.line, name=name.value, params=params, body=body)
 
     def try_statement(self, token: Token) -> ast.TryStmt:
-        """``प्रयास`` … ``पकड़ नाम`` … ``अन्त``."""
-        body = self.block(stops=("CATCH",))
-        if not self.match_keyword("CATCH"):
-            raise self.error("'पकड़' अपेक्षित था")
-        name = self.expect_name("त्रुटि चर का नाम")
-        handler = self.block()
-        return ast.TryStmt(line=token.line, body=body, name=name.value, handler=handler)
+        """``प्रयास`` … ``पकड़ नाम`` … ``अन्ततः`` … ``अन्त``."""
+        body = self.block(stops=("CATCH", "FINALLY"))
+        name = "त्रुटि"
+        handler: List[ast.Node] = []
+        if self.match_keyword("CATCH"):
+            name = self.expect_name("त्रुटि चर का नाम").value
+            handler = self.block(stops=("FINALLY",))
+        final: List[ast.Node] = []
+        if self.match_keyword("FINALLY"):
+            final = self.block()
+        if not handler and not final:
+            raise self.error("'पकड़' या 'अन्ततः' अपेक्षित था")
+        return ast.TryStmt(line=token.line, body=body, name=name,
+                           handler=handler, final=final)
 
     def block(self, stops: Tuple[str, ...] = ()) -> List[ast.Node]:
         """Parse a newline separated block terminated by ``END``.
