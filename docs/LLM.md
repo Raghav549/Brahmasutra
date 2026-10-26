@@ -81,17 +81,29 @@ worst absolute difference between analytic and numeric gradient: 2.35e-11
 
 ### 2.3 Size presets
 
-| preset | d_model | hidden | order | vocab cap | params (measured) |
+| preset | d_model | hidden | order | vocab cap | params (counted) | 1 epoch: time / perplexity |
 |---|---|---|---|---|---|
-| `tiny` | 8 | 32 | 2 | 96 | 4 480 |
-| `small` | 16 | 64 | 3 | 160 | 16 096 |
-| `medium` | 24 | 128 | 4 | 256 | 51 584 |
-| `large` | 32 | 192 | 5 | 384 | (scales as `V·H + H·(order·d)` ) |
+| `tiny` | 8 | 32 | 2 | 96 | 4 480 | 2 s / **13.8** |
+| `small` | 16 | 64 | 3 | 160 | 16 096 | 5 s / — |
+| `medium` | 24 | 128 | 4 | 256 | 51 584 | 11 s / — |
+| `large` | 32 | 192 | 5 | 384 | 117 312 (trained: 115 287) | 21.7 s / 86.6 |
+| `xlarge` | 48 | 384 | 6 | 512 | 314 240 (trained: 254 919) | 50.3 s / 342.6 |
+| `huge` | 64 | 768 | 8 | 768 | 886 272 (trained: 558 903) | **107.4 s / 3 139.9** |
+| `brahma` | 96 | 1536 | 10 | 1024 | **2 411 008** | not trained (hours) |
 
-`brahma llm info` always prints the **counted** parameter total of the loaded
-checkpoint rather than a marketing number.
+The last column is the point of this table: **more parameters make held-out
+perplexity worse** on this corpus, because the vocabulary and the model outgrow
+the ~33 k characters of training text (each preset has a larger vocab cap, so
+more rows can be badly estimated).  `huge` was trained twice in a clean tree and
+produced the identical number both times — it is reproducible, not a fluke.
+Scaling this project means writing more सूत्र, not widening the hidden layer.
 
----
+Every number in the *params* column is printed by
+`build_model(...).parameter_count()` on this checkout —
+`brahma` (2.41 M) is instantiated and counted, **not** trained to convergence.
+`brahma llm info` always prints the counted total of the loaded checkpoint
+rather than a marketing number, and §9 explains why counting is the honest
+claim to make.
 
 ## 3. Measured results
 
@@ -167,25 +179,50 @@ statement you can execute, not a slogan.
 
 ## 4. सूत्र-OS — the kernel is its own
 
-`brahma_llm/kernel.py` compiles a सूत्र program (`KERNEL_SOURCE`) to the project's
+`brahma_llm/os_kernel.py` holds the operating system as **one सूत्र program**
+(`KERNEL_SOURCE`).  `brahma_llm/kernel.py` compiles it to the project's own
 bytecode and wraps it in the documented image format:
 
 ```
 "SUTRAOS" | version (>I) | payload length (>I) | bytecode
 ```
 
+The kernel implements six subsystems, each self-tested at boot, all in सूत्र:
+
+| subsystem | what it does |
+|---|---|
+| **स्मृति** | first-fit allocator with a free list and byte accounting |
+| **प्रक्रिया** | process table: pid allocation, states, priorities, lookup, kill |
+| **अनुसूचक** | round-robin scheduler with per-process ticks and cycle counter |
+| **आह्वान** | syscall table (`sys_write`, `sys_read`, `sys_exit`, `sys_fork`, `sys_time`) with per-call counters |
+| **सञ्चिका** | in-memory filesystem with inodes, sizes, create/write/read/list |
+| **व्यवधान** | interrupt counter with source tracking |
+
 The boot contract is enforced by `verify()`: banner → self-test line
-`स्व-परीक्षण: ठीक / ठीक` → `READY`. `install()` refuses to write an image that
-fails it.
+`स्व-परीक्षण: ठीक / ठीक` → subsystem summary → `READY`.  `install()` refuses to
+write an image that fails it.
 
 ```
 $ brahma llm kernel verify
 🕉️ सूत्र-OS कर्नेल प्रारम्भ
 स्व-परीक्षण: ठीक / ठीक
-स्मृति इकाइयाँ: 7
+उपप्रणाली: 5/5 ठीक
+स्मृति: 352 बाइट, 4 खंड, 0 मुक्त
+प्रक्रियाएँ: 4 (तैयार 3)
+अनुसूचक: 2 चक्र
+आह्वान: 2
+सञ्चिकाएँ: /इत्यादि/संस्करण, /इत्यादि/स्वागत
+व्यवधान: 3 (अंतिम: चक्रिका)
+कर्नेल API: 9 फलन
 READY
-  चरण: 143, छवि: 10059 बाइट, स्थिति: ठीक
+  चरण: 1723, छवि: 111021 बाइट, स्थिति: ठीक
 ```
+
+The kernel ends by exporting `कर्नेल_एपीआई` — a real dictionary of nine callable
+functions (`स्मृति_आवंटन`, `प्रक्रिया_जन्म`, `अनुसूचक` …), i.e. the OS exposes an
+API *to programs*, not just a boot banner.  The language had to grow for this:
+dictionaries, slicing, nested index assignment and multi-line bracketed literals
+(see `docs/LANGUAGE.md`), all added with tests.
 
 The shell in `kernel/kernel_engine.py` is a real userland for it — `boot`,
 `verify`, `run FILE.sutra`, `memory`, `exit`. `.sutra` files are **compiled**;
@@ -254,13 +291,13 @@ Everything lands in `$BRAHMA_HOME/llm/`: `best/` (`model.json`,
 brahma llm mission --target "अभाज्य संख्या जाँच" --iterations 2 --epochs 2 --size tiny
 ```
 
-Measured run (2.9 s):
+Measured run (3.7 s, after the 3.0.0 cleanup):
 
 | step | result |
 |---|---|
-| training | 2 rounds, 12/12 programs ran, perplexity 15.313 → **14.006**, hidden 32 → 40 |
+| training | 2 rounds, 12/12 programs ran, perplexity 18.766 → **15.951**, hidden 32 → 40, params 5 384 |
 | own OS | the model wrote a kernel body; it booted, so `origin = model`, image installed |
-| app | logic **generated** by the model, ran, `/status` + `/run` smoke tests passed |
+| **server** | the trained model was served on a real port and smoke-tested: `/status`, `/kernel`, `/chat` (code), `/run`, `/image` — `smoke_ok: true`, `/run` returned `42`, `/image` returned a PNG |
 | report | `<BRAHMA_HOME>/mission/mission.json` |
 
 The boot contract is a fixed harness (banner → self-test → *generated body* →
@@ -268,6 +305,83 @@ The boot contract is a fixed harness (banner → self-test → *generated body* 
 model's body that actually boots wins. If no prefix boots, the shipped kernel is
 reinstalled and the report says `origin = shipped-kernel` — the fallback is
 recorded, never hidden.
+
+There is **no app builder** any more: the last step starts ब्रह्म itself and
+proves the model answers, writes code, executes it and renders an image behind
+HTTP. See §6.7.
+
+### 6.6 Continuing instead of restarting (`--resume`, `--continuous`)
+
+A mission that is thrown away after one run is not an autonomous loop, so the
+cycle can continue from where it stopped:
+
+```bash
+brahma llm mission --target "अभाज्य संख्या जाँच" --iterations 1 --epochs 1 \
+        --continuous --max-generations 3 --budget 120      # keep improving
+brahma llm mission --target "अभाज्य संख्या जाँच" --iterations 1 --epochs 1 --resume
+```
+
+`--continuous` trains further generations while each one beats the last, the
+budget lasts and `--target-perplexity` has not been met.  Measured
+(`--max-generations 3 --budget 120`, fresh home):
+
+| generation | cold start | held-out perplexity | improved |
+|---|---|---|---|
+| 1 | yes | 25.568 | — |
+| 2 | no (warm) | 23.133 | yes |
+| 3 | no (warm) | **22.288** | yes |
+
+`--resume` reloads the previous mission's best checkpoint and passes its
+perplexity in as the bar to beat.  Measured on the run above (`--resume
+--iterations 1`): `previous_best = 15.951`, the resumed round produced **19.464**,
+so the report says `improved_this_run: false`, `best_perplexity` stays **15.951**
+and the better checkpoint is kept.  That is the point of the flag: a regression
+is *reported as a regression* and cannot overwrite the best model.  The trainer
+also receives `previous_best`, so "सुधरा" in the log is judged against the
+previous mission rather than against infinity.
+
+### 6.7 The model serves itself — chat, code, action, image
+
+`brahma llm serve` starts ब्रह्म on HTTP; there is nothing to generate first.
+
+| endpoint | what it really does |
+|---|---|
+| `GET /` | one-page UI: chat, code, run, image |
+| `GET /status` | model, kernel, corpus, last mission |
+| `GET /kernel` | boots the installed सूत्र-OS image over HTTP |
+| `POST /chat` | intent routing → the matching capability below |
+| `POST /generate` | raw model continuation |
+| `POST /run` | compile + execute सूत्र on the VM |
+| `POST /explain` | structural analysis (functions, opcodes, nesting) |
+| `GET /image?prompt=…` | a real PNG rendered from a सूत्र program the model chose |
+
+The agent (`brahma_llm/agent.py`) splits into real capabilities, not promises:
+
+| intent | what happens |
+|---|---|
+| `chat` | the model continues the conversation; empty output → an honest "no checkpoint" reply |
+| `code` | valid सूत्र candidates are generated for the goal, **ranked by the model's own loss**, the winner is compiled and executed, and its output is returned with the source |
+| `run` | सूत्र source from the message is executed on the VM |
+| `explain` | the program is parsed and reported structurally — deterministic |
+| `image` | the model picks a numeric सूत्र program, the VM runs it, and its numbers plus the model's distribution drive a procedural PNG renderer (zlib/struct only) |
+| `status` / `help` | measured state / the capability table |
+
+### 6.8 What "the model writes the code" means here
+
+Two mechanisms are used, and both are the model's:
+
+1. **ranking** — the goal selects candidate programs deterministically
+   (`ProgramGenerator.categories_for`), then the model scores every candidate as
+   `loss(prompt + candidate)` and the lowest-loss program wins.  Measured: for
+   `अभाज्य संख्या जाँच` the chosen candidate is the अभाज्य category, and its
+   executed output is `2 3 5 7 11 13 …`.
+2. **free generation** — `complete_program` asks the model to continue
+   `"# लक्ष्य: …"`, keeps the longest prefix that compiles **and runs**, and
+   reports whether it succeeded (`free_generation_runs`).
+
+At 4 480 parameters free generation is mostly garbage, and the API says so
+rather than dressing it up.  Ranking is what makes the capability useful today;
+free generation is the part that grows with the model and the corpus.
 
 ---
 
@@ -287,7 +401,7 @@ recorded, never hidden.
                             │ NgramLM       │
                             │ trainer       │
                             │ selfedit      │
-                            │ app_builder   │
+                            │ agent·server  │
                             └───┬───────┬───┘
                                 │       │
                   ┌─────────────▼─┐   ┌─▼──────────────────┐
@@ -303,8 +417,9 @@ Concrete entry points:
 * `brahma llm …` — the whole stack behind one CLI (`brahma/cli.py` delegates);
 * `brahma_chat.create_app()` — adds `/llm`, `/llm/generate`, `/llm/run` to the
   chat backend, so a browser client talks to the model and the VM;
-* `brahma llm build-app` / `कृत्रिमबुद्धि/सूत्र_अनुप्रयोग_निर्माता.py` — the app
-  builder is now LLM-driven and smoke-tested;
+* `brahma llm serve` (`brahma_llm/server.py`) — the model serving itself: chat,
+  code, run, explain, image, kernel, status;
+* `brahma llm ask` / `brahma llm image` — the same agent from the CLI;
 * `कृत्रिमबुद्धि/सूत्र_पूर्ण_स्वचालित_निर्माता.py` — LLM → सूत्र → **real
   bytecode** (`.sbc`) → execution + disassembly;
 * `kernel/kernel_engine.py` and `सूत्र_boot_image_builder.py` — the OS side.
@@ -316,21 +431,24 @@ Concrete entry points:
 ```
 brahma llm info [--model DIR] [--json]
 brahma llm corpus [--sample N] [--json]
-brahma llm train [--kind neural|ngram] [--size tiny|small|medium|large] [--epochs N] [--docs] [--out DIR]
+brahma llm train [--kind neural|ngram] [--size tiny|small|medium|large|xlarge|huge|brahma] [--epochs N] [--docs] [--out DIR]
 brahma llm generate PROMPT [--tokens N] [--temperature T] [--engine python|sutra]
 brahma llm complete [PROMPT] [--tokens N]          # valid सूत्र program only
-brahma llm chat [--once]
+brahma llm ask MESSAGE [--model DIR] [--out PNG] [--json]
+brahma llm chat [--model DIR]
+brahma llm image PROMPT [--out PNG] [--model DIR] [--json]
+brahma llm serve [--host H] [--port P] [--model DIR] [--once] [--allow-train]
 brahma llm autotrain --target TEXT [--iterations N] [--epochs N] [--budget S] [--json]
 brahma llm evolve --body|--os [--extra N] [--json]
 brahma llm kernel build|boot|verify|install|info [--json]
-brahma llm build-app --target TEXT [--out DIR] [--port P] [--json]
-brahma llm mission --target TEXT [--iterations N] [--epochs N] [--no-os] [--no-app] [--json]
+brahma llm mission --target TEXT [--iterations N] [--epochs N] [--resume]\
+                    [--continuous] [--target-perplexity P] [--no-os] [--no-serve] [--json]
 brahma llm sutra-math [--json]
 brahma llm bench [--sizes …] [--epochs N] [--json]
 ```
 
 All commands respect `BRAHMA_HOME` (default `~/सूत्र-तंत्र`) for checkpoints,
-apps, images and logs, so a throwaway run never touches your home directory:
+images, mission reports and logs, so a throwaway run never touches your home directory:
 
 ```bash
 BRAHMA_HOME=/tmp/b python -m brahma llm train
@@ -341,39 +459,55 @@ BRAHMA_HOME=/tmp/b python -m brahma llm autotrain --target "सूची का�
 
 ## 9. Scaling — the honest arithmetic
 
-The model is `V·d + H·(order·d) + V·H` parameters. Training cost in pure Python
-is roughly **10–30 µs per parameter per epoch** on one core (measured: 16 k
-parameters × 4 epochs ≈ 11 s). That gives:
+The model is `V·d + H·(order·d) + V·H` parameters.  Training cost in pure Python
+is dominated by interpreted arithmetic: measured on this checkout, one epoch
+costs **~2 s at 4.5 k parameters, 21.7 s at 115 k, 50.3 s at 255 k and 107.4 s at
+559 k** — about 20 µs per parameter per epoch on one core.
 
-| parameters | realistic pure-Python training time | what it would buy on this corpus |
+| parameters | measured here | what it buys on this corpus |
 |---|---|---|
-| 5 k (tiny) | seconds | memorises patterns, generates short valid programs |
-| 50 k (medium) | ~35 s for 4 epochs | better local syntax, more overfitting |
-| 1 M | hours per epoch | pointless without more data |
-| 10⁹–10¹¹ | not feasible here | needs accelerators, 10¹²+ tokens, and months |
+| 4 480 (`tiny`) | 2 s/epoch, ppl **13.8** | best perplexity in the table |
+| 115 287 (`large`) | 21.7 s/epoch, ppl 86.6 | worse: vocabulary outgrew the text |
+| 254 919 (`xlarge`) | 50.3 s/epoch, ppl 342.6 | worse again |
+| 558 903 (`huge`) | 107.4 s/epoch, ppl 3 139.9 | worse still — twice, identically |
+| 2 411 008 (`brahma`) | instantiated + counted, not trained | hours/epoch, no data to justify it |
+| 10⁹–10¹¹ | not feasible here | needs accelerators, 10¹²+ tokens, months |
 
-So the code is *architecture-scalable* and the corpus is not. Growing the model
-without growing the data makes perplexity worse — §3.1 shows that happening.
-Anyone claiming otherwise is selling something; this document measures it
-instead. The right next steps, in order, are: more सूत्र programs (the generator
-can make them), a bigger held-out set, then a larger `--size`.
+So the code is *architecture-scalable* and this corpus is not.  Growing the model
+without growing the data makes perplexity worse, and this document measures that
+happening rather than asserting the opposite.  Anyone claiming a repository like
+this one contains "the largest, most powerful LLM" is selling something; the
+right next steps, in order, are: more सूत्र programs (the generator can make
+them), a bigger held-out set, then a larger `--size`.
 
 ---
 
 ## 10. Limitations
 
-* **Corpus size**: ~33 k characters. Devanagari-only text generation beyond
-  short programs is not what this checkpoint is good at.
-* **Speed**: pure Python. A pure-Python softmax over a 96-token vocabulary is
-  fine; over 50 k tokens it is not. `NgramLM` exists for fast baselines.
-* **No attention**: the context is a fixed window of `order` akṣaras. Adding
-  attention is a real project (and needs the data to justify it).
+* **Size**: the largest instantiable preset here is **2.41 M parameters**
+  (`--size brahma`), and the largest actually trained end-to-end in this repo is
+  558 903 (`--size huge`, 107 s, one epoch).  This is not, and cannot be
+  described as, the largest or most powerful LLM in existence — frontier models
+  are 10⁵–10⁶× larger and are trained on trillions of tokens.  What this project
+  claims is narrower and checkable: the whole stack (language, VM, kernel,
+  trainer, self-editor, agent, server, images) is here, from scratch, and runs.
+* **Corpus size**: ~33 k characters.  Devanagari-only generation beyond short
+  programs is not what these checkpoints are good at.
+* **Speed**: pure Python. Every multiply-add is a CPython operation, so `huge`
+  and `brahma` are counting exercises, not training runs.
+* **No attention**: the context is a fixed window of `order` akṣaras.  Adding
+  attention is a real project, and it needs the data to justify it.
 * **`<unk>` handling**: warm starts keep the vocabulary fixed, so new akṣaras
   map to `<unk>`; a full retrain rebuilds it.
 * **Self-editing scope**: weights, size, corpus, generated programs and the OS
   image — never repository source without review (§5).
-* **Not a chatbot**: `brahma llm chat` generates continuations; it does not do
-  instruction following, RLHF, or tool use beyond the VM.
+* **Chat quality**: intent routing and code/image actions work; open-ended
+  conversation is a continuation from a 4 k–250 k parameter model, not an
+  assistant.  `docs/LLM.md` §6.8 is explicit about which half of "the model
+  writes code" is doing the work.
+* **Images are procedural**: the model supplies the program and the palette; the
+  renderer is rings + waves + value noise.  It is not diffusion, and no part of
+  this repository claims otherwise.
 
 ---
 
@@ -381,7 +515,9 @@ can make them), a bigger held-out set, then a larger `--size`.
 
 ```
 $ python -m pytest tests/test_llm.py -q
-44 passed in 6.3 s
+59 passed in 14.6 s
+$ python -m pytest -q
+483 passed in 29.2 s
 ```
 
 Covered: tokenizer reversibility, n-gram distributions and learning, neural
@@ -389,6 +525,9 @@ gradients vs central differences, training loss decrease, save/load equality,
 सूत्र↔Python forward-pass equality (1e-12), kernel image layout/boot/verify/
 install, corrupt-image rejection, generator validity, invalid-program rejection,
 body surgery invariants, editor accept/reject + audit log, the autonomous loop
-(report shape, acceptance rate, budget stop), app-builder smoke tests and the
-CLI wiring (`brahma llm …`) and the one-command mission (whole cycle, honest
-`model`/`shipped-kernel` fallback).
+(report shape, acceptance rate, budget stop, resume honesty, continuous
+generations, perplexity stop), the agent (intent routing, model-ranked
+synthesis, execution, structural explanation, status), image output (real PNG,
+deterministic, model-driven program), the HTTP surface (index, status, kernel
+boot, chat/code, run, explain, image, 400s on bad input) and the CLI
+(`ask`, `image`, `serve --once`, `mission`).

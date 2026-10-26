@@ -23,9 +23,10 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
     multiply   := unary (("*" | "/" | "%") unary)*
     unary      := ("न" | "-" | "+") unary | power
     power      := postfix ("**" unary)?
-    postfix    := primary ("[" expr "]")*
+    postfix    := primary ("[" expr? (":" expr?)? "]")*
     primary    := NUMBER | STRING | "सत्य" | "असत्य" | "शून्य"
-                | NAME "(" args ")" | NAME | "[" items "]" | "(" expr ")"
+                | NAME "(" args ")" | NAME | "[" items "]" | "{" pairs "}"
+                | "(" expr ")"
 """
 
 from __future__ import annotations
@@ -171,6 +172,23 @@ class Parser:
 
     def simple_statement(self) -> ast.Node:
         token = self.current
+
+        # Generalised lvalue: ``a[i][j] = expr`` (nested indexing) as well as
+        # the plain ``x = expr`` form.  Parsed speculatively, then rolled back.
+        saved = self.pos
+        try:
+            target = self.postfix()
+        except Exception:  # noqa: BLE001 - not an lvalue, fall through
+            target = None
+        if target is not None and self.check_op("=") and isinstance(target, (ast.Name, ast.Index)):
+            self.advance()
+            value = self.expression()
+            if isinstance(target, ast.Name):
+                return ast.AssignStmt(line=token.line, name=target.name, value=value, op="=")
+            return ast.IndexAssignStmt(line=token.line, target=target.target,
+                                       index=target.index, value=value)
+        self.pos = saved
+
         # Assignment forms: ``x = expr``, ``x += expr``, ``a[i] = expr``
         if self.check(TokenKind.NAME) and self.peek().kind is TokenKind.OP:
             nxt = self.peek().value
@@ -334,9 +352,22 @@ class Parser:
         node = self.primary()
         while self.check_op("["):
             token = self.advance()
-            index = self.expression()
+            start = None
+            stop = None
+            is_slice = False
+            if not self.check_op(":", "]"):
+                start = self.expression()
+            if self.match_op(":"):
+                is_slice = True
+                if not self.check_op("]"):
+                    stop = self.expression()
             self.expect_op("]")
-            node = ast.Index(line=token.line, target=node, index=index)
+            if is_slice:
+                node = ast.Slice(line=token.line, target=node, start=start, stop=stop)
+            else:
+                if start is None:
+                    raise self.error("खाली सूचकांक '[]' मान्य नहीं")
+                node = ast.Index(line=token.line, target=node, index=start)
         return node
 
     def primary(self) -> ast.Node:
@@ -380,6 +411,19 @@ class Parser:
             node = self.expression()
             self.expect_op(")")
             return node
+
+        if self.match_op("{"):
+            keys: List[ast.Node] = []
+            values: List[ast.Node] = []
+            if not self.check_op("}"):
+                while True:
+                    keys.append(self.expression())
+                    self.expect_op(":")
+                    values.append(self.expression())
+                    if not self.match_op(","):
+                        break
+            self.expect_op("}")
+            return ast.DictExpr(line=token.line, keys=keys, values=values)
 
         if self.match_op("["):
             items: List[ast.Node] = []

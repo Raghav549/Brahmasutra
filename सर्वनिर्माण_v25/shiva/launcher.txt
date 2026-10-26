@@ -1,9 +1,0 @@
-
-सूत्र Android Launcher
-
-WebView load:
-assets/index.html
-
-Display screen
-
-Start app

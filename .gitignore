@@ -53,3 +53,6 @@ store/apps/*.apk
 /कार्य_*.py
 /निर्मित_अनुप्रयोग/
 /निर्मित_एण्ड्रॉयड/
+
+# Images rendered by `brahma llm image` at the repository root
+/brahma-*.png

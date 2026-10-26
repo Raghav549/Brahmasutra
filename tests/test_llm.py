@@ -14,7 +14,6 @@ import os
 
 import pytest
 
-from brahma_llm.app_builder import generate_app, slug
 from brahma_llm.kernel import (
     IMAGE_SIGNATURE, boot, build_image, install, read_image, unpack_image, verify,
 )
@@ -336,27 +335,155 @@ class TestTrainer:
 # ---------------------------------------------------------------------------
 # app builder
 # ---------------------------------------------------------------------------
-class TestAppBuilder:
-    def test_slug_keeps_devanagari_and_is_safe(self):
-        assert slug("प्राइम संख्या अनुप्रयोग") == "प्राइम_संख्या_अनुप्रयोग"
-        assert slug("") == "app"
-        assert "/" not in slug("a/b c")
+class TestAgent:
+    """The model is the product: chat, code, run, explain, image."""
 
-    def test_builds_a_runnable_app_without_a_model(self, home, tmp_path):
-        manifest = generate_app(None, "योग अनुप्रयोग", outdir=str(tmp_path / "app"))
-        app_dir = manifest["dir"]
-        for name in ("server.py", "index.html", "README.md", "manifest.json"):
-            assert os.path.exists(os.path.join(app_dir, name))
-        assert manifest["logic_runs"] is True
-        assert manifest["smoke"]["ok"] is True
-        assert manifest["smoke"]["status"]["engine"] == "BRAHMA"
-        assert manifest["logic_origin"].startswith("fallback")
+    def test_intent_routing_is_explicit(self):
+        from brahma_llm.agent import detect_intent
 
-    def test_builds_with_a_trained_model(self, home, tmp_path, tiny_model):
-        manifest = generate_app(tiny_model, "दर्शय अनुप्रयोग", outdir=str(tmp_path / "app2"))
-        assert manifest["logic_runs"] is True
-        assert manifest["smoke"]["ok"] is True
-        assert manifest["model"]["params"] > 0
+        assert detect_intent("नमस्ते") == "chat"
+        assert detect_intent("कोड लिखो: अभाज्य संख्या जाँच") == "code"
+        assert detect_intent("दर्शय 2 + 3") == "run"
+        assert detect_intent("चित्र बनाओ: शांति") == "image"
+        assert detect_intent("status") == "status"
+        assert detect_intent("help") == "help"
+
+    def test_synthesize_ranks_with_the_model_and_runs_the_winner(self, tiny_model):
+        from brahma_llm.agent import synthesize
+
+        result = synthesize("अभाज्य संख्या जाँच", tiny_model)
+        assert result["origin"] == "ranked"
+        assert result["error"] is None
+        assert result["output"], "चुना गया कार्यक्रम कुछ नहीं छापा"
+        assert result["category"] == "अभाज्य", result["category"]
+        losses = [row["loss"] for row in result["ranking"]]
+        assert losses == sorted(losses), "श्रेणी मॉडल loss के क्रम में होनी चाहिए"
+
+    def test_generated_code_really_executes(self, tiny_model):
+        from brahma_llm.agent import BrahmaAgent
+
+        agent = BrahmaAgent(model=tiny_model)
+        result = agent.run("दर्शय 6 * 7")
+        assert result["error"] is None
+        assert result["output"] == ["42"]
+        assert result["origin"] == "message"
+
+    def test_explain_reports_structure_not_opinions(self):
+        from brahma_llm.agent import explain
+
+        report = explain("कार्य योग(a, b)\n    प्रत्यागमन a + b\nअन्त\nदर्शय योग(2, 3)")
+        assert report["ok"] is True
+        assert report["functions"][0]["name"] == "योग"
+        assert report["bytecode_instructions"] > 0
+        broken = explain("स्थापय अ = ")
+        assert broken["ok"] is False and broken["error"]
+
+    def test_status_boots_the_kernel(self, home, tiny_model):
+        from brahma_llm.agent import BrahmaAgent
+
+        status = BrahmaAgent(model=tiny_model).status()
+        assert status["kernel"]["ok"] is True
+        assert status["model"]["params"] == tiny_model.model.parameter_count()
+
+    def test_respond_never_raises_on_a_broken_request(self, tiny_model):
+        from brahma_llm.agent import BrahmaAgent
+
+        agent = BrahmaAgent(model=tiny_model)
+        for message in ("", "दर्शय ", "चित्र", "explain"):
+            result = agent.respond(message)
+            assert isinstance(result["text"], str)
+
+
+class TestImage:
+    def test_png_is_real_and_deterministic(self, home, tmp_path):
+        from brahma_llm.image import generate
+
+        first = generate("शांति", None, path=str(tmp_path / "a.png"))
+        second = generate("शांति", None, path=str(tmp_path / "b.png"))
+        blob = open(first["path"], "rb").read()
+        assert blob.startswith(b"\x89PNG\r\n\x1a\n")
+        assert first["seed"] == second["seed"]
+        assert blob == open(second["path"], "rb").read()
+        assert first["origin"] in ("generated", "ranked", "fallback")
+
+    def test_model_driven_program_supplies_the_numbers(self, home, tmp_path, tiny_model):
+        from brahma_llm.image import generate
+
+        meta = generate("अभाज्य चित्र", tiny_model, path=str(tmp_path / "c.png"))
+        assert meta["origin"] != "fallback", meta
+        assert meta["numbers"] >= 4
+        assert "दर्शय" in meta["program"]
+
+
+class TestServer:
+    """One server, every capability — including the kernel it boots."""
+
+    @pytest.fixture()
+    def running(self, home, tmp_path, tiny_model):
+        import brahma_llm.server as server_module
+
+        app = server_module.create_app(model=tiny_model, image_dir=str(tmp_path / "img"))
+        port = app.start("127.0.0.1", 0)
+        try:
+            yield "http://127.0.0.1:%d" % port
+        finally:
+            app.shutdown()
+
+    @staticmethod
+    def _post(base, path, payload):
+        import urllib.request
+
+        request = urllib.request.Request(
+            base + path, data=json.dumps(payload).encode("utf-8"), method="POST",
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+    @staticmethod
+    def _get(base, path):
+        import urllib.request
+
+        with urllib.request.urlopen(base + path, timeout=60) as response:
+            return response.read(), response.headers
+
+    def test_index_and_status(self, running):
+        page, headers = self._get(running, "/")
+        assert "ब्रह्म".encode("utf-8") in page
+        assert "text/html" in headers["Content-Type"]
+        status = json.loads(self._get(running, "/status")[0].decode("utf-8"))
+        assert status["kernel"]["ok"] is True
+
+    def test_kernel_boots_over_http(self, running):
+        report = json.loads(self._get(running, "/kernel")[0].decode("utf-8"))
+        assert report["ok"] is True
+        assert any("READY" in line for line in report["output"])
+
+    def test_chat_code_run_and_explain(self, running):
+        chat = self._post(running, "/chat", {"message": "कोड लिखो: अभाज्य संख्या जाँच"})
+        assert chat["intent"] == "code"
+        assert chat["error"] is None
+        run = self._post(running, "/run", {"source": "दर्शय 7 * 6"})
+        assert run["ok"] is True and run["output"] == ["42"]
+        explain = self._post(running, "/explain", {"source": "दर्शय 1"})
+        assert explain["ok"] is True
+
+    def test_image_endpoint_returns_png(self, running):
+        import urllib.parse
+
+        blob, headers = self._get(running, "/image?prompt=" + urllib.parse.quote("शांति"))
+        assert headers["Content-Type"] == "image/png"
+        assert blob.startswith(b"\x89PNG")
+        assert headers["X-Brahma-Seed"].isdigit()
+
+    def test_validation_errors_are_400_not_500(self, running):
+        import urllib.error
+
+        with pytest.raises(urllib.error.HTTPError) as error:
+            self._post(running, "/chat", {"message": ""})
+        assert error.value.code == 400
+        with pytest.raises(urllib.error.HTTPError) as error:
+            self._get(running, "/image")
+        assert error.value.code == 400
 
 
 # ---------------------------------------------------------------------------
@@ -380,12 +507,33 @@ class TestCli:
         assert capsys.readouterr().out.strip()
         assert main(["complete", "दर्शय", "--tokens", "10", "--seed", "1"]) == 0
 
-    def test_build_app_command(self, home, capsys, tmp_path):
+    def test_ask_command(self, home, capsys, tmp_path, tiny_model):
         from brahma_llm.cli import main
 
-        code = main(["build-app", "--target", "अनुप्रयोग", "--out", str(tmp_path / "cli-app"), "--json"])
+        checkpoint = tiny_model.save(str(tmp_path / "cli-ckpt"))
+        code = main(["ask", "दर्शय 2 + 3", "--model", checkpoint, "--json"])
         assert code == 0
-        assert json.loads(capsys.readouterr().out)["smoke"]["ok"] is True
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["intent"] == "run"
+        assert payload["output"] == ["5"]
+
+    def test_image_command_writes_a_png(self, home, capsys, tmp_path, tiny_model):
+        from brahma_llm.cli import main
+
+        checkpoint = tiny_model.save(str(tmp_path / "cli-ckpt2"))
+        target = str(tmp_path / "cli.png")
+        code = main(["image", "शांति", "--model", checkpoint, "--out", target])
+        assert code == 0
+        assert open(target, "rb").read(4) == b"\x89PNG"
+
+    def test_serve_command_binds_once(self, home, capsys, tmp_path, tiny_model):
+        from brahma_llm.cli import main
+
+        checkpoint = tiny_model.save(str(tmp_path / "cli-ckpt3"))
+        code = main(["serve", "--model", checkpoint, "--port", "0", "--once",
+                     "--image-dir", str(tmp_path / "cli-img")])
+        assert code == 0
+        assert "तैयार" in capsys.readouterr().out
 
     def test_brahma_llm_subcommand_is_wired(self, home, capsys):
         from brahma.cli import main as brahma_main
@@ -415,9 +563,12 @@ class TestMission:
         assert report["kernel_verified"] is True
         assert report["os"]["accepted"] is True
         assert report["os"]["origin"] in ("model", "shipped-kernel")
-        assert report["app"]["built"] is True
-        assert report["app"]["logic_runs"] is True
-        assert report["app"]["smoke_ok"] is True
+        assert report["server"]["served"] is True
+        assert report["server"]["chat_ok"] is True
+        assert report["server"]["run_ok"] is True
+        assert report["server"]["image_ok"] is True
+        assert report["server"]["kernel_ok"] is True
+        assert report["server"]["smoke_ok"] is True
         assert os.path.exists(report["report_path"])
         saved = json.load(open(report["report_path"], encoding="utf-8"))
         assert saved["target"] == "अभाज्य संख्या जाँच"
@@ -426,10 +577,10 @@ class TestMission:
         from brahma_llm.mission import run_mission
 
         report = run_mission("सूची", outdir=str(tmp_path / "mission2"), iterations=1, epochs=1,
-                             size="tiny", budget=120, write_os=False, build_app=False,
+                             size="tiny", budget=120, write_os=False, serve=False,
                              log=lambda message: None)
         assert report["os"]["attempted"] is False
-        assert report["app"]["built"] is False
+        assert report["server"]["served"] is False
         assert report["kernel_verified"] is True
 
     def test_kernel_harness_boots_with_a_generated_body(self):
@@ -440,6 +591,53 @@ class TestMission:
         report = verify(build_image(source))
         assert report["ok"], report["problems"]
         assert "5" in report["output"]
+
+    def test_mission_resume_keeps_the_better_checkpoint(self, home, tmp_path):
+        """Resume वही चेकपॉइंट रखता है और गिरावट को "सुधार" नहीं कहता।"""
+        from brahma_llm.mission import run_mission
+
+        outdir = str(tmp_path / "mission_resume")
+        first = run_mission("अभाज्य संख्या जाँच", outdir=outdir, iterations=1, epochs=1,
+                            size="tiny", budget=60, write_os=False, serve=False,
+                            log=lambda message: None)
+        second = run_mission("अभाज्य संख्या जाँच", outdir=outdir, iterations=1, epochs=1,
+                             size="tiny", budget=60, write_os=False, serve=False,
+                             resume=True, log=lambda message: None)
+        training = second["training"]
+        assert training["resumed_from"] == first["training"]["checkpoint"]
+        assert training["previous_best"] == pytest.approx(first["training"]["best_perplexity"])
+        assert training["best_perplexity"] <= first["training"]["best_perplexity"] + 1e-9
+        assert training["improved_this_run"] is (
+            training["best_perplexity"] < first["training"]["best_perplexity"])
+
+    def test_mission_continuous_runs_several_generations(self, home, tmp_path):
+        from brahma_llm.mission import run_mission
+
+        report = run_mission("सूची", outdir=str(tmp_path / "mission_cont"), iterations=1,
+                             epochs=1, size="tiny", budget=120, continuous=True,
+                             max_generations=2, write_os=False, serve=False,
+                             log=lambda message: None)
+        generations = report["training"]["generations"]
+        assert 1 <= len(generations) <= 2
+        assert all("improved" in generation for generation in generations)
+        assert report["training"]["programs"]["accepted"] >= 1
+        if len(generations) == 2:
+            assert generations[0]["cold_start"] is True
+            assert generations[1]["cold_start"] is False
+
+    def test_trainer_warm_start_keeps_the_weights(self, home, tmp_path, tiny_model):
+        from brahma_llm.trainer import AutonomousTrainer, Target
+
+        checkpoint = tiny_model.save(str(tmp_path / "warm"))
+        before = tiny_model.model.parameter_count()
+        trainer = AutonomousTrainer(workdir=str(tmp_path / "warm_work"),
+                                    log=lambda message: None)
+        report = trainer.run(Target(description="सूची", iterations=1, epochs=1, size="tiny",
+                                    budget_seconds=60, resume_from=checkpoint,
+                                    allow_growth=False))
+        assert report["cold_start"] is False
+        assert report["target"]["resume_from"] == checkpoint
+        assert report["params"] >= before
 
     def test_broken_generated_kernel_falls_back_to_the_shipped_one(self, home, tmp_path):
         from brahma_llm.mission import _compose_kernel

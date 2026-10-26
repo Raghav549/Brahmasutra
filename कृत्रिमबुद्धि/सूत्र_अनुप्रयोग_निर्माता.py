@@ -4,11 +4,11 @@ What this class used to do: write a fixed ``संकल्प अ 10`` program 
 opcode dialect the current compiler cannot even parse), a static HTML page and a
 Python stub, print "निर्मित", and call it an application.
 
-What it does now: hands the request to :mod:`brahma_llm.app_builder`, which asks
-the ब्रह्म-LLM for सूत्र logic, **runs** that logic on the project's VM, builds a
-dependency-free server + UI around it, and smoke-tests the HTTP endpoints before
-reporting success.  If no checkpoint exists yet the builder falls back to a
-validated template program and says so in the manifest.
+What it does now: there is no app builder in ब्रह्म any more.  The model *is* the
+application, so this shim asks :class:`brahma_llm.agent.BrahmaAgent` to write
+सूत्र logic for the request, executes it on the project's VM, and writes a
+manifest that points at the model's own server (``brahma llm serve``) instead of
+pretending to have generated a separate program.
 
     >>> sv = सूत्रअनुप्रयोगनिर्माता()          # doctest: +SKIP
     >>> sv.सूत्र_अनुप्रयोग("मेरा_अनुप्रयोग")   # doctest: +SKIP
@@ -47,7 +47,7 @@ def _load_model(model_dir=None):
 
 
 class सूत्रअनुप्रयोगनिर्माता:
-    """Generate real, smoke-tested applications with the ब्रह्म-LLM."""
+    """Drive ब्रह्म-LLM: the model answers, writes सूत्र and runs it."""
 
     def __init__(self, model_dir=None, out_root=None):
         print("🕉️ सूत्र अनुप्रयोग निर्माता (ब्रह्म-LLM) सक्रिय")
@@ -66,25 +66,49 @@ class सूत्रअनुप्रयोगनिर्माता:
         return "अनुप्रयोग_" + str(random.randint(1000, 9999))
 
     def _build(self, नाम, लक्ष्य):
-        from brahma_llm.app_builder import generate_app
+        """Ask the model for सूत्र logic, run it, and record where to talk to it."""
+        from brahma_llm.agent import BrahmaAgent
 
-        manifest = generate_app(self.model, लक्ष्य, outdir=os.path.join(self.अनुप्रयोग_पथ, नाम),
-                                name=नाम, smoke=True)
-        print("अनुप्रयोग निर्मित: %s" % manifest["dir"])
-        print("  तर्क: %s (%s), smoke: %s"
-              % (manifest["logic_file"], manifest["logic_origin"],
-                 "ठीक" if manifest["smoke"].get("ok") else manifest["smoke"]))
+        agent = BrahmaAgent(model=self.model)
+        result = agent.code(लक्ष्य)
+        directory = os.path.join(self.अनुप्रयोग_पथ, नाम)
+        os.makedirs(directory, exist_ok=True)
+        logic_file = "%s.sutra" % नाम
+        with open(os.path.join(directory, logic_file), "w", encoding="utf-8") as handle:
+            handle.write(result.get("source", ""))
+        manifest = {
+            "name": नाम,
+            "target": लक्ष्य,
+            "dir": directory,
+            "logic_file": logic_file,
+            "logic_origin": result.get("origin", "none"),
+            "logic_runs": result.get("error") is None and bool(result.get("source")),
+            "output": result.get("output", []),
+            "smoke": {"ok": result.get("error") is None and bool(result.get("source")),
+                      "detail": "मॉडल ने सूत्र लिखा और VM पर चलाया"},
+            "engine": "BRAHMA-LLM",
+            "mode": "llm-serve",
+            "server": "brahma llm serve",
+            "endpoints": ["/chat", "/run", "/explain", "/image", "/kernel", "/status"],
+        }
+        with open(os.path.join(directory, "manifest.json"), "w", encoding="utf-8") as handle:
+            json.dump(manifest, handle, ensure_ascii=False, indent=1)
+        print("मॉडल तैयार: %s" % directory)
+        print("  तर्क: %s (%s), निष्पादन: %s"
+              % (logic_file, manifest["logic_origin"],
+                 "ठीक" if manifest["logic_runs"] else "विफल"))
+        print("  बातचीत: `brahma llm serve` चलाएँ (मॉडल ही अनुप्रयोग है)")
         return manifest
 
     # -- public API (names kept from the legacy builder) -----------------
     def सूत्र_अनुप्रयोग(self, नाम):
-        """Build a सूत्र-logic application (server + UI + manifest)."""
+        """Write + run सूत्र logic for ``नाम`` and record its manifest."""
         return self._build(नाम, "सूत्र अनुप्रयोग %s" % नाम)
 
     def वेबसाइट(self, नाम):
-        """Build the web surface — the generated app already serves ``index.html``."""
+        """The web surface is the model's own server (``/`` serves the UI)."""
         manifest = self._build(नाम, "वेबसाइट %s" % नाम)
-        manifest["index"] = os.path.join(manifest["dir"], "index.html")
+        manifest["index"] = "brahma llm serve → GET /"
         print("वेबसाइट: %s" % manifest["index"])
         return manifest
 

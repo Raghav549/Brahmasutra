@@ -1,6 +1,0 @@
-
-<manifest package="mahadevAI">
-<application>
-<activity android:name="MainActivity"/>
-</application>
-</manifest>

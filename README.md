@@ -7,7 +7,7 @@ that writes सूत्र and retrains itself.**
 [![CI](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml/badge.svg)](https://github.com/Raghav549/Brahmasutra/actions/workflows/python-package.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-456%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-483%20passing-brightgreen)](tests/)
 
 ```brahma
 कार्य फिब(n)
@@ -56,8 +56,8 @@ been rebuilt on a sound footing.
 
 | Component | Status |
 |---|---|
-| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI | ✅ **stable**, 460 tests, 93 % coverage |
-| `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, kernel image, app builder, `mission` | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
+| `brahma/` — lexer, parser, compiler, bytecode, VM, CLI (dicts, slicing, 40+ builtins) | ✅ **stable**, 483 tests, 93 % coverage |
+| `brahma_llm/` — tokenizer, n-gram + neural LM, trainer, self-editor, **सूत्र-OS kernel**, agent (chat·code·run·explain·image) and HTTP server | ✅ **works**, trained from scratch with no ML dependencies (**[docs/LLM.md](docs/LLM.md)**) |
 | `examples/` — 7 runnable programs | ✅ works |
 | `tests/` — unit, integration, CLI, web stack, legacy regression | ✅ works, runs in CI on Python 3.9–3.12 |
 | `brahma_web` / `brahma_chat` — stdlib HTTP + demo backends | ✅ works (no Flask needed) |
@@ -78,14 +78,23 @@ brahma llm complete "कार्य"            # only syntactically valid स�
 brahma llm autotrain --target "अभाज्य संख्या जाँच लिखो" --iterations 4
 brahma llm evolve --body --os          # grow the model, rebuild + verify the kernel
 brahma llm kernel verify               # boot SUTRAOS: banner → self-test → READY
-brahma llm build-app --target "योग अनुप्रयोग"
 brahma llm mission --target "अभाज्य संख्या जाँच"   # the whole cycle in one command
+brahma llm serve --port 8080           # the model *is* the app: chat · code · run · image
+brahma llm ask "कोड लिखो: अभाज्य संख्या जाँच"      # one-shot: model writes + runs सूत्र
+brahma llm image "शांति" --out om.png  # model-chosen सूत्र program → real PNG
 brahma llm sutra-math                  # the model's maths, executed by सूत्र itself
 ```
 
 A measured autonomous run (4 rounds, 9.2 s, `docs/LLM.md` §3.2): 24/24 generated
 programs ran, held-out perplexity **10.43 → 8.96 (−14 %)**, hidden layer grown
 32 → 48 with **zero** prediction drift, kernel rebuilt and verified.
+
+The kernel is a real सूत्र program (`brahma_llm/os_kernel.py`): memory allocator,
+process table, round-robin scheduler, syscall table, in-memory filesystem and
+interrupt counter, each self-tested at boot — 5/5 subsystems, `READY`, and a
+dictionary of nine callable kernel functions. No app builder ships any more: the
+model answers chat, writes and executes सूत्र code, explains code and renders
+images, on one stdlib HTTP server.
 
 ### Honesty rules this repository follows
 
@@ -223,7 +232,7 @@ suite runs in ~5 seconds and can pin the behaviour of the legacy tree.
 ## Testing
 
 ```bash
-pytest -q                                  # 460 passed in ~20 s
+pytest -q                                  # 483 passed in ~26 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools                  # 0 issues
 python tools/legacy_baseline.py --check    # 51/51 demos pass, none unregistered

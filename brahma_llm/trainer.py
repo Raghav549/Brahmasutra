@@ -49,6 +49,10 @@ class Target:
     size: str = "tiny"
     kind: str = "neural"
     allow_growth: bool = True
+    #: चेकपॉइंट — मिलने पर नया मॉडल बनाने के बजाय वहीं से आगे बढ़ें।
+    resume_from: Optional[str] = None
+    #: पिछले मिशन की सर्वोत्तम perplexity — इससे बुरा परिणाम "सुधार" नहीं कहलाएगा।
+    previous_best: Optional[float] = None
 
     def as_dict(self) -> dict:
         return {
@@ -63,6 +67,8 @@ class Target:
             "size": self.size,
             "kind": self.kind,
             "allow_growth": self.allow_growth,
+            "resume_from": self.resume_from,
+            "previous_best": self.previous_best,
         }
 
 
@@ -107,8 +113,25 @@ class AutonomousTrainer:
         self.log("   आधार: %d पाठ, परीक्षा: %d पाठ, बजट: %.0f सेकंड"
                  % (len(train_texts), len(holdout_texts), target.budget_seconds))
 
-        model = BrahmaLLM.create(kind=target.kind, size=target.size, seed=self.seed)
-        best: Dict[str, object] = {"perplexity": float("inf"), "iteration": 0, "path": ""}
+        cold_start = True
+        model = None
+        if target.resume_from and os.path.exists(os.path.join(target.resume_from, "model.json")):
+            try:
+                model = BrahmaLLM.load(target.resume_from)
+                cold_start = False
+                self.log("  ↩️ चेकपॉइंट से आगे: %s (%d पैरामीटर)"
+                         % (target.resume_from, model.model.parameter_count()))
+            except Exception as error:  # noqa: BLE001 - reported, then cold start
+                self.log("  ⚠️ चेकपॉइंट नहीं पढ़ा जा सका (%s: %s) — नए मॉडल से शुरू"
+                         % (type(error).__name__, error))
+        if model is None:
+            model = BrahmaLLM.create(kind=target.kind, size=target.size, seed=self.seed)
+        seed_best = target.previous_best if (target.previous_best and not cold_start) else None
+        best: Dict[str, object] = {
+            "perplexity": float(seed_best) if seed_best else float("inf"),
+            "iteration": 0,
+            "path": (target.resume_from or "") if seed_best else "",
+        }
         rounds: List[dict] = []
         generated_total = 0
         passed_total = 0
@@ -131,9 +154,14 @@ class AutonomousTrainer:
 
             # 3. train
             train_this_round = list(train_texts) + [candidate.source for candidate in accepted]
-            if iteration == 1:
+            if iteration == 1 and cold_start:
                 model.fit(train_this_round, epochs=target.epochs,
                           on_epoch=lambda epoch, loss: self.log("    epoch %d loss %.4f" % (epoch + 1, loss)))
+            elif iteration == 1:
+                # Warm start: keep the loaded weights and vocabulary, anneal the step.
+                current = getattr(model.model, "learning_rate", 0.02)
+                model.continue_training(train_this_round, epochs=max(1, target.epochs),
+                                        learning_rate=max(0.004, current * 0.6))
             else:
                 # Anneal: successive rounds take smaller steps so that warm
                 # starts refine the model instead of oscillating around a
@@ -212,6 +240,7 @@ class AutonomousTrainer:
             "kernel": {"ok": kernel["ok"], "steps": kernel["steps"], "image_bytes": kernel["image_bytes"]},
             "self_edits": [record.as_dict() for record in self.editor.records],
             "corpus_files": len(sutra_files()),
+            "cold_start": cold_start,
         }
         report_path = os.path.join(self.workdir, "report.json")
         os.makedirs(self.workdir, exist_ok=True)
@@ -232,7 +261,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--keywords", default="")
     parser.add_argument("--iterations", type=int, default=3)
     parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--size", default="tiny", choices=sorted(["tiny", "small", "medium", "large"]))
+    parser.add_argument("--size", default="tiny",
+                        choices=sorted(["tiny", "small", "medium", "large",
+                                        "xlarge", "huge", "brahma"]))
     parser.add_argument("--kind", default="neural", choices=("neural", "ngram"))
     parser.add_argument("--budget", type=float, default=180.0, help="सेकंड")
     parser.add_argument("--threshold", type=float, default=None)

@@ -102,6 +102,10 @@ def format_value(value: Any) -> str:
         return repr(value)
     if isinstance(value, list):
         return "[" + ", ".join(format_value(item) for item in value) + "]"
+    if isinstance(value, dict):
+        pairs = ["%s: %s" % (format_value(key), format_value(item))
+                 for key, item in value.items()]
+        return "{" + ", ".join(pairs) + "}"
     if isinstance(value, Function):  # pragma: no cover - printing a function
         return "<कार्य %s>" % value.name
     if isinstance(value, Builtin):  # pragma: no cover
@@ -183,6 +187,202 @@ def _builtin_push(items: Any, value: Any) -> List[Any]:  # pragma: no cover - al
     return _builtin_append(items, value)
 
 
+# --- strings -------------------------------------------------------------
+def _need_str(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise RuntimeFault("%s() को शब्द चाहिए, मिला %s" % (name, type(value).__name__))
+    return value
+
+
+def _builtin_split(text: Any, separator: Any = None) -> List[str]:
+    text = _need_str(text, "विभाजन")
+    if separator is None:
+        return text.split()
+    if not isinstance(separator, str):
+        raise RuntimeFault("विभाजन() का विभाजक शब्द होना चाहिए")
+    if separator == "":
+        raise RuntimeFault("विभाजन() का विभाजक खाली नहीं हो सकता")
+    return text.split(separator)
+
+
+def _builtin_replace(text: Any, old: Any, new: Any) -> str:
+    return _need_str(text, "प्रतिस्थापन").replace(_need_str(old, "प्रतिस्थापन"),
+                                                  _need_str(new, "प्रतिस्थापन"))
+
+
+def _builtin_trim(text: Any) -> str:
+    return _need_str(text, "त्रिम").strip()
+
+
+def _builtin_upper(text: Any) -> str:
+    return _need_str(text, "बड़े").upper()
+
+
+def _builtin_lower(text: Any) -> str:
+    return _need_str(text, "छोटे").lower()
+
+
+def _builtin_find(text: Any, needle: Any) -> int:
+    return _need_str(text, "खोज").find(_need_str(needle, "खोज"))
+
+
+def _builtin_str_repeat(text: Any, count: Any) -> str:
+    text = _need_str(text, "दोहराओ")
+    if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        raise RuntimeFault("दोहराओ() की संख्या अऋणात्मक पूर्णांक होनी चाहिए")
+    return text * count
+
+
+# --- lists ---------------------------------------------------------------
+def _need_list(value: Any, name: str) -> list:
+    if not isinstance(value, list):
+        raise RuntimeFault("%s() को सूची चाहिए, मिला %s" % (name, type(value).__name__))
+    return value
+
+
+def _builtin_sort(items: Any) -> List[Any]:
+    values = _need_list(items, "क्रम")
+    try:
+        return sorted(values)
+    except TypeError:
+        raise RuntimeFault("क्रम() — मिश्रित प्रकारों को क्रम में नहीं लगाया जा सकता")
+
+
+def _builtin_reverse(items: Any) -> List[Any]:
+    return list(reversed(_need_list(items, "उलटा")))
+
+
+def _builtin_pop(items: Any, index: Any = -1) -> Any:
+    values = _need_list(items, "हटाओ")
+    if isinstance(index, bool) or not isinstance(index, int):
+        raise RuntimeFault("हटाओ() का सूचकांक पूर्णांक होना चाहिए")
+    if not values:
+        raise RuntimeFault("हटाओ() — सूची खाली है")
+    try:
+        return values.pop(index)
+    except IndexError:
+        raise RuntimeFault("हटाओ() — सूचकांक सीमा से बाहर")
+
+
+def _builtin_insert(items: Any, index: Any, value: Any) -> List[Any]:
+    values = _need_list(items, "सम्मिलित")
+    if isinstance(index, bool) or not isinstance(index, int):
+        raise RuntimeFault("सम्मिलित() का सूचकांक पूर्णांक होना चाहिए")
+    values.insert(index, value)
+    return values
+
+
+def _builtin_extend(items: Any, other: Any) -> List[Any]:
+    values = _need_list(items, "विस्तार")
+    values.extend(_need_list(other, "विस्तार"))
+    return values
+
+
+def _builtin_count(items: Any, value: Any) -> int:
+    if isinstance(items, str):
+        return items.count(_need_str(value, "गिनती"))
+    return _need_list(items, "गिनती").count(value)
+
+
+def _builtin_index_of(items: Any, value: Any) -> int:
+    if isinstance(items, str):
+        return items.find(_need_str(value, "स्थान"))
+    values = _need_list(items, "स्थान")
+    try:
+        return values.index(value)
+    except ValueError:
+        raise RuntimeFault("स्थान() — मान सूची में नहीं है")
+
+
+def _builtin_sum(items: Any) -> Any:
+    values = _need_list(items, "योगफल")
+    total: Any = 0
+    for item in values:
+        if isinstance(item, bool) or not isinstance(item, (int, float)):
+            raise RuntimeFault("योगफल() केवल संख्याओं पर लागू है")
+        total += item
+    return total
+
+
+def _builtin_list(value: Any = None) -> List[Any]:
+    if value is None:
+        return []
+    if isinstance(value, (list, str, tuple)):
+        return list(value)
+    if isinstance(value, dict):
+        return list(value.keys())
+    raise RuntimeFault("सूची() इस मान से सूची नहीं बना सकता")
+
+
+# --- dicts ---------------------------------------------------------------
+def _need_dict(value: Any, name: str) -> dict:
+    if not isinstance(value, dict):
+        raise RuntimeFault("%s() को तालिका चाहिए, मिला %s" % (name, type(value).__name__))
+    return value
+
+
+def _builtin_keys(table: Any) -> List[Any]:
+    return list(_need_dict(table, "कुंजियाँ").keys())
+
+
+def _builtin_values(table: Any) -> List[Any]:
+    return list(_need_dict(table, "मान").values())
+
+
+def _builtin_has(table: Any, key: Any) -> bool:
+    return key in _need_dict(table, "समाविष्ट")
+
+
+def _builtin_drop(table: Any, key: Any) -> Any:
+    mapping = _need_dict(table, "हटाओ_कुंजी")
+    if key not in mapping:
+        raise RuntimeFault("हटाओ_कुंजी() — कुंजी नहीं मिली: %r" % (key,))
+    return mapping.pop(key)
+
+
+def _builtin_dict() -> Dict[Any, Any]:
+    return {}
+
+
+# --- maths / misc --------------------------------------------------------
+def _builtin_sqrt(value: Any) -> float:
+    import math as _math
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RuntimeFault("वर्गमूल() को संख्या चाहिए")
+    if value < 0:
+        raise RuntimeFault("वर्गमूल() ऋणात्मक संख्या पर परिभाषित नहीं")
+    return _math.sqrt(value)
+
+
+def _builtin_type(value: Any) -> str:
+    if value is None:
+        return "शून्य"
+    if isinstance(value, bool):
+        return "बूलियन"
+    if isinstance(value, int):
+        return "पूर्णांक"
+    if isinstance(value, float):
+        return "दशमलव"
+    if isinstance(value, str):
+        return "शब्द"
+    if isinstance(value, list):
+        return "सूची"
+    if isinstance(value, dict):
+        return "तालिका"
+    return "अन्य"
+
+
+def _builtin_round(value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RuntimeFault("गोल() को संख्या चाहिए")
+    return int(round(value))
+
+
+def _builtin_sorted_join(items: Any) -> str:
+    return "".join(format_value(item) for item in _need_list(items, "मिलाओ"))
+
+
 #: The standard library exposed to every program.
 BUILTINS: Dict[str, Builtin] = {}
 
@@ -204,6 +404,31 @@ _register(("अधिकतम", "max"), _builtin_max, 1, None)
 _register(("श्रेणी", "range"), _builtin_range, 1, 3)
 _register(("जोड़ो", "join"), _builtin_join, 2, 2)
 _register(("जोड़ें", "append"), _builtin_append, 2, 2)
+_register(("विभाजन", "split"), _builtin_split, 1, 2)
+_register(("प्रतिस्थापन", "replace"), _builtin_replace, 3, 3)
+_register(("त्रिम", "trim", "strip"), _builtin_trim, 1, 1)
+_register(("बड़े", "upper"), _builtin_upper, 1, 1)
+_register(("छोटे", "lower"), _builtin_lower, 1, 1)
+_register(("खोज", "find"), _builtin_find, 2, 2)
+_register(("दोहराओ", "repeat"), _builtin_str_repeat, 2, 2)
+_register(("क्रम", "sort", "sorted"), _builtin_sort, 1, 1)
+_register(("उलटा", "reverse"), _builtin_reverse, 1, 1)
+_register(("हटाओ", "pop"), _builtin_pop, 1, 2)
+_register(("सम्मिलित", "insert"), _builtin_insert, 3, 3)
+_register(("विस्तार", "extend"), _builtin_extend, 2, 2)
+_register(("गिनती", "count"), _builtin_count, 2, 2)
+_register(("स्थान", "index_of"), _builtin_index_of, 2, 2)
+_register(("योगफल", "sum"), _builtin_sum, 1, 1)
+_register(("सूची", "list"), _builtin_list, 0, 1)
+_register(("कुंजियाँ", "keys"), _builtin_keys, 1, 1)
+_register(("मान", "values"), _builtin_values, 1, 1)
+_register(("समाविष्ट", "has"), _builtin_has, 2, 2)
+_register(("हटाओ_कुंजी", "drop"), _builtin_drop, 2, 2)
+_register(("तालिका", "dict"), _builtin_dict, 0, 0)
+_register(("वर्गमूल", "sqrt"), _builtin_sqrt, 1, 1)
+_register(("प्रकार", "type"), _builtin_type, 1, 1)
+_register(("गोल", "round"), _builtin_round, 1, 1)
+_register(("मिलाओ", "fuse"), _builtin_sorted_join, 1, 1)
 
 
 class VM:
@@ -308,6 +533,24 @@ class VM:
                 items = [self._pop(frame, instruction) for _ in range(count)]
                 items.reverse()
                 frame.stack.append(items)
+
+            elif op == "BUILD_DICT":
+                count = int(instruction.arg or 0)
+                pairs = [self._pop(frame, instruction) for _ in range(count * 2)]
+                pairs.reverse()
+                mapping = {}
+                for position in range(0, len(pairs), 2):
+                    key = pairs[position]
+                    if isinstance(key, (list, dict)):
+                        raise RuntimeFault("कुंजी अपरिवर्तनीय होनी चाहिए", line=instruction.line)
+                    mapping[key] = pairs[position + 1]
+                frame.stack.append(mapping)
+
+            elif op == "LOAD_SLICE":
+                stop = self._pop(frame, instruction)
+                start = self._pop(frame, instruction)
+                target = self._pop(frame, instruction)
+                frame.stack.append(self._slice(target, start, stop, instruction))
 
             elif op == "LOAD_INDEX":
                 index = self._pop(frame, instruction)
@@ -532,9 +775,24 @@ class VM:
         return left == right
 
     @staticmethod
-    def _index(target: Any, index: Any, instruction: Instruction) -> Any:
+    def _slice(target: Any, start: Any, stop: Any, instruction: Instruction) -> Any:
         if not isinstance(target, (str, list)):
-            raise RuntimeFault("केवल शब्द/सूची का सूचकांक लिया जा सकता है", line=instruction.line)
+            raise RuntimeFault("काट केवल शब्द/सूची पर लागू है", line=instruction.line)
+        for bound, name in ((start, "आरम्भ"), (stop, "अन्त")):
+            if bound is None:
+                continue
+            if isinstance(bound, bool) or not isinstance(bound, int):
+                raise RuntimeFault("काट का %s पूर्णांक होना चाहिए" % name, line=instruction.line)
+        return target[start:stop]
+
+    @staticmethod
+    def _index(target: Any, index: Any, instruction: Instruction) -> Any:
+        if isinstance(target, dict):
+            if index not in target:
+                raise RuntimeFault("कुंजी नहीं मिली: %r" % (index,), line=instruction.line)
+            return target[index]
+        if not isinstance(target, (str, list)):
+            raise RuntimeFault("केवल शब्द/सूची/तालिका का सूचकांक लिया जा सकता है", line=instruction.line)
         if isinstance(index, bool) or not isinstance(index, int):
             raise RuntimeFault("सूचकांक पूर्णांक होना चाहिए", line=instruction.line)
         length = len(target)
@@ -547,8 +805,13 @@ class VM:
 
     @staticmethod
     def _store_index(target: Any, index: Any, value: Any, instruction: Instruction) -> None:
+        if isinstance(target, dict):
+            if isinstance(index, (list, dict)):
+                raise RuntimeFault("कुंजी अपरिवर्तनीय होनी चाहिए", line=instruction.line)
+            target[index] = value
+            return
         if not isinstance(target, list):
-            raise RuntimeFault("केवल सूची में मान लिखा जा सकता है", line=instruction.line)
+            raise RuntimeFault("केवल सूची/तालिका में मान लिखा जा सकता है", line=instruction.line)
         if isinstance(index, bool) or not isinstance(index, int):
             raise RuntimeFault("सूचकांक पूर्णांक होना चाहिए", line=instruction.line)
         length = len(target)

@@ -4,12 +4,12 @@
 
 ```bash
 python -m pip install -e ".[dev]" pytest-cov
-pytest -q                                   # 460 tests, ~15 s
+pytest -q                                   # 483 tests, ~26 s
 pytest -q --cov=brahma --cov-report=term-missing
 flake8 brahma tests tools brahma_llm
 ```
 
-Expected result: **456 passed, 0 xfailed**, 93 % statement coverage of the
+Expected result: **483 passed, 0 xfailed**, 93 % statement coverage of the
 engine, `flake8` exit code 0.
 
 ## Layout
@@ -25,7 +25,7 @@ engine, `flake8` exit code 0.
 | `tests/test_integration.py` | all example programs, source↔bytecode equivalence, public API, packaging |
 | `tests/test_legacy.py` | the historical demo tree: 51 scripts + 23 module imports, pinned to a baseline |
 | `tests/test_web_stack.py` | web stack, chat backend, bytecode format, CLI helper, generators, packaging, AI model |
-| `tests/test_llm.py` | ब्रह्म-LLM: tokenizer, n-gram + neural LM, **gradient check**, सूत्र↔Python forward pass, kernel image, generator validity, self-editing invariants, autonomous loop, app builder, `brahma llm` CLI |
+| `tests/test_llm.py` | ब्रह्म-LLM: tokenizer, n-gram + neural LM, **gradient check**, सूत्र↔Python forward pass, kernel image, generator validity, self-editing invariants, autonomous loop, agent (chat·code·run·explain·image), HTTP server, `brahma llm` CLI |
 | `tests/conftest.py` | helpers (`output_of`, `repo_copy` sandbox fixture) |
 | `tools/legacy_baseline.py` | regenerates / verifies the legacy baseline |
 
