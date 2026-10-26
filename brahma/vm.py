@@ -85,6 +85,10 @@ class Frame:
     handlers: List[Any] = field(default_factory=list)
     #: The fault currently being handled here, for ``RERAISE``.
     pending: Optional[RuntimeFault] = None
+    #: Names declared ``बाह्य`` (write through to the enclosing scope) and
+    #: ``वैश्विक`` (write through to the globals).
+    nonlocals: Any = field(default_factory=set)
+    global_names: Any = field(default_factory=set)
 
     @property
     def name(self) -> str:
@@ -560,6 +564,9 @@ class VM:
                 frame.stack.append(self._load_name(frame, instruction))
 
             elif op == "STORE_NAME":
+                if instruction.arg in frame.nonlocals or instruction.arg in frame.global_names:
+                    self._store_outer(frame, instruction)
+                    continue
                 frame.locals[instruction.arg] = self._pop(frame, instruction)
 
             elif op == "POP":
@@ -640,6 +647,12 @@ class VM:
             elif op == "CALL":
                 self._call(frame, instruction)
 
+            elif op == "DECLARE_NONLOCAL":
+                frame.nonlocals.add(instruction.arg)
+
+            elif op == "DECLARE_GLOBAL":
+                frame.global_names.add(instruction.arg)
+
             elif op == "RAISE":
                 message = self._pop(frame, instruction)
                 raise RuntimeFault(str(message), line=instruction.line)
@@ -694,6 +707,20 @@ class VM:
         if not frame.stack:
             raise RuntimeFault("स्टैक अंडरफ़्लो (%s)" % instruction.op, line=instruction.line)
         return frame.stack.pop()
+
+    def _store_outer(self, frame: Frame, instruction: Instruction) -> None:
+        """Write a ``बाह्य``/``वैश्विक`` name into the scope that declares it."""
+        name = instruction.arg
+        value = self._pop(frame, instruction)
+        if name in frame.global_names:
+            self.globals[name] = value
+            return
+        for scope in frame.enclosing:
+            if name in scope:
+                scope[name] = value
+                return
+        # A name that no enclosing scope owns becomes global, like Python.
+        self.globals[name] = value
 
     def _load_name(self, frame: Frame, instruction: Instruction) -> Any:
         name = instruction.arg

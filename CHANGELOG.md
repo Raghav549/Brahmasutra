@@ -4,6 +4,44 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.5.0] — 2026-10-27
+
+### Added
+
+* **`बाह्य` / `nonlocal` and `वैश्विक` / `global`.**  A function now writes
+  through to an enclosing closure variable or to a global when the name is
+  declared at the top of its body; `बाह्य a, b` accepts several names.  Two new
+  opcodes (`DECLARE_NONLOCAL`, `DECLARE_GLOBAL`) mark the name in the frame, and
+  `STORE_NAME` routes the write accordingly.  The classic counter closure works:
+
+  ```brahma
+  कार्य काउंटर()
+      स्थापय गिनती = 0
+      कार्य बढ़ाओ()
+          बाह्य गिनती
+          गिनती = गिनती + 1
+          प्रत्यागमन गिनती
+      अन्त
+      प्रत्यागमन बढ़ाओ
+  अन्त
+  c = काउंटर()
+  दर्शय c()        # 1
+  दर्शय c()        # 2
+  ```
+
+  A `बाह्य` name that no enclosing scope owns falls back to a global, which is
+  documented rather than hidden.  Declaring outside a function is a parse error.
+* 8 new tests (statefulness, independence, globals, several names, read-only
+  closures still work, parse error, fallback, bytecode round trip) — **556**
+  total.
+
+### Changed
+
+* `docs/LANGUAGE.md` §2, §5, §8.1 and §10 updated for 3.5.0:  "closures are
+  read-only" and "there is no `nonlocal`/`global`" are gone, replaced by the
+  precise remaining caveat (declarations are not validated against the enclosing
+  scopes).
+
 ## [3.4.0] — 2026-10-27
 
 ### Added

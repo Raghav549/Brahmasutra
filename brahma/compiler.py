@@ -84,6 +84,11 @@ class Compiler:
         elif isinstance(node, ast.TryStmt):
             self._try(node, code)
 
+        elif isinstance(node, ast.ScopeDecl):
+            for name in node.names:
+                code.emit("DECLARE_NONLOCAL" if node.kind == "nonlocal"
+                          else "DECLARE_GLOBAL", name, node.line)
+
         elif isinstance(node, ast.RaiseStmt):
             if node.value is None:
                 code.emit("LOAD_CONST", "उठाया गया अपवाद", node.line)
@@ -163,6 +168,18 @@ class Compiler:
             if code.instructions[index].arg is None:  # pragma: no cover - defensive
                 code.instructions[index].arg = start
 
+    @staticmethod
+    def _split_declarations(statements: List[ast.Node]):
+        """Pull top-level ``बाह्य``/``वैश्विक`` declarations out of a body."""
+        body: List[ast.Node] = []
+        declarations = []
+        for statement in statements:
+            if isinstance(statement, ast.ScopeDecl):
+                declarations.extend((statement.kind, name) for name in statement.names)
+            else:
+                body.append(statement)
+        return body, declarations
+
     def _run_exits(self, code: CodeObject, depth: int, line: int) -> None:
         """Inline every ``अन्ततः`` body from the innermost down to ``depth``.
 
@@ -231,7 +248,11 @@ class Compiler:
         saved_loops = self.loops
         self.function = func_code
         self.loops = []
-        self._statements(node.body, func_code)
+        body, declarations = self._split_declarations(node.body)
+        for kind, name in declarations:
+            func_code.emit("DECLARE_NONLOCAL" if kind == "nonlocal" else "DECLARE_GLOBAL",
+                           name, node.line)
+        self._statements(body, func_code)
         func_code.emit("LOAD_CONST", None, node.line)
         func_code.emit("RETURN", line=node.line)
         self.function = previous

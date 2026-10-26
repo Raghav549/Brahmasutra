@@ -16,6 +16,7 @@ Grammar (EBNF, ``NL`` = newline, ``END`` = ``अन्त``/``end``)::
     try        := "प्रयास" NL block ("पकड़" NAME NL block)?
                   ("अन्ततः" NL block)? END
     raise      := "उठाओ" expr?
+    scope_decl := ("बाह्य" | "वैश्विक") NAME ("," NAME)*
     return     := "प्रत्यागमन" expr?
     expr       := or
     or         := and ("वा" and)*
@@ -150,6 +151,17 @@ class Parser:
 
         if self.match_keyword("TRY"):
             return self.try_statement(token)
+
+        if self.check_keyword("NONLOCAL", "GLOBAL"):
+            token = self.advance()
+            if self.func_depth == 0:
+                raise self.error("'%s' केवल कार्य के भीतर मान्य है" % token.text, token)
+            names = [self.expect_name("चर का नाम").value]
+            while self.match_op(","):
+                names.append(self.expect_name("चर का नाम").value)
+            return ast.ScopeDecl(line=token.line,
+                                 kind="nonlocal" if token.value == "NONLOCAL" else "global",
+                                 names=names)
 
         if self.match_keyword("RAISE"):
             quiet = (self.check(TokenKind.NEWLINE) or self.check(TokenKind.EOF)

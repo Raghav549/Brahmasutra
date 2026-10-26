@@ -883,3 +883,128 @@ class TestSliceAssignment:
         lines = []
         VM(out=lines.append).run(load_bytecode(path))
         assert lines == ["[1, 7]"]
+
+
+class TestScopeDeclarations:
+    """``बाह्य`` / ``वैश्विक`` — closures can now write through (3.5)."""
+
+    def test_nonlocal_counter_keeps_state(self):
+        source = (
+            "कार्य काउंटर()\n"
+            "    स्थापय गिनती = 0\n"
+            "    कार्य बढ़ाओ()\n"
+            "        बाह्य गिनती\n"
+            "        गिनती = गिनती + 1\n"
+            "        प्रत्यागमन गिनती\n"
+            "    अन्त\n"
+            "    प्रत्यागमन बढ़ाओ\n"
+            "अन्त\n"
+            "c = काउंटर()\n"
+            "दर्शय c()\n"
+            "दर्शय c()\n"
+            "दर्शय c()\n"
+        )
+        assert out(source) == ["1", "2", "3"]
+
+    def test_two_counters_are_independent(self):
+        source = (
+            "कार्य काउंटर()\n"
+            "    स्थापय गिनती = 0\n"
+            "    कार्य बढ़ाओ()\n"
+            "        बाह्य गिनती\n"
+            "        गिनती = गिनती + 1\n"
+            "        प्रत्यागमन गिनती\n"
+            "    अन्त\n"
+            "    प्रत्यागमन बढ़ाओ\n"
+            "अन्त\n"
+            "a = काउंटर()\n"
+            "b = काउंटर()\n"
+            "a()\n"
+            "a()\n"
+            "दर्शय a()\n"
+            "दर्शय b()\n"
+        )
+        assert out(source) == ["3", "1"]
+
+    def test_global_declaration_writes_module_scope(self):
+        source = (
+            "कुल = 0\n"
+            "कार्य जोड़ो(n)\n"
+            "    वैश्विक कुल\n"
+            "    कुल = कुल + n\n"
+            "अन्त\n"
+            "जोड़ो(5)\n"
+            "जोड़ो(7)\n"
+            "दर्शय कुल\n"
+        )
+        assert out(source) == ["12"]
+
+    def test_two_names_in_one_declaration(self):
+        source = (
+            "कार्य f()\n"
+            "    स्थापय a = 1\n"
+            "    स्थापय b = 2\n"
+            "    कार्य g()\n"
+            "        बाह्य a, b\n"
+            "        a = a + 10\n"
+            "        b = b + 20\n"
+            "    अन्त\n"
+            "    g()\n"
+            "    प्रत्यागमन [a, b]\n"
+            "अन्त\n"
+            "दर्शय f()\n"
+        )
+        assert out(source) == ["[11, 22]"]
+
+    def test_read_only_closures_still_work(self):
+        source = (
+            "कार्य f()\n"
+            "    स्थापय x = 5\n"
+            "    कार्य g()\n"
+            "        प्रत्यागमन x\n"
+            "    अन्त\n"
+            "    प्रत्यागमन g\n"
+            "अन्त\n"
+            "g = f()\n"
+            "दर्शय g()\n"
+        )
+        assert out(source) == ["5"]
+
+    def test_declaration_outside_a_function_is_rejected(self):
+        error = error_of("बाह्य x\n")
+        assert "कार्य" in error.message
+
+    def test_undeclared_outer_name_falls_back_to_globals(self):
+        source = (
+            "कार्य f()\n"
+            "    बाह्य नया\n"
+            "    नया = 7\n"
+            "अन्त\n"
+            "f()\n"
+            "दर्शय नया\n"
+        )
+        assert out(source) == ["7"]
+
+    def test_declarations_survive_a_bytecode_round_trip(self, tmp_path):
+        from brahma import compile_source, dump_bytecode, load_bytecode
+        from brahma.vm import VM
+
+        source = (
+            "कार्य काउंटर()\n"
+            "    स्थापय n = 0\n"
+            "    कार्य जोड़ो()\n"
+            "        बाह्य n\n"
+            "        n = n + 1\n"
+            "        प्रत्यागमन n\n"
+            "    अन्त\n"
+            "    प्रत्यागमन जोड़ो\n"
+            "अन्त\n"
+            "c = काउंटर()\n"
+            "c()\n"
+            "दर्शय c()\n"
+        )
+        path = str(tmp_path / "scope.sbc")
+        dump_bytecode(compile_source(source), path)
+        lines = []
+        VM(out=lines.append).run(load_bytecode(path))
+        assert lines == ["2"]
